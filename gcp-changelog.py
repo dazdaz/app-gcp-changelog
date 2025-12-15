@@ -977,17 +977,17 @@ class ReleaseNotesScraper:
         # Continue with existing text-based parsing
         all_text_elements = content_area.find_all(string=True)
         
-        for text in all_text_elements:
-            text = text.strip()
-            if not text:
+        for nav_string in all_text_elements:
+            text_str = str(nav_string).strip()
+            if not text_str:
                 continue
                 
             for pattern in selectors['date_patterns']:
-                matches = re.findall(pattern, text)
+                matches = re.findall(pattern, text_str)
                 for match in matches:
                     parsed_date = self._parse_date(match)
                     if parsed_date and parsed_date >= self.cutoff_date:
-                        parent = text.parent
+                        parent = nav_string.parent
                         if parent and parent.name not in ['script', 'style']:
                             text_content = str(parent)
                             content = parent.get_text(strip=True)
@@ -1754,7 +1754,7 @@ Output formats:
     all_releases = []
     for url, service_name in zip(urls, service_names):
         if args.verbose and len(urls) > 1:
-            print(f"Fetching: {service_name}...", file=sys.stderr)
+            print(f"Fetching: {service_name} ({url})...", file=sys.stderr)
         
         scraper = ReleaseNotesScraper(
             url,
