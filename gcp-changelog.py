@@ -560,7 +560,7 @@ class ReleaseNotesScraper:
                     fallback_url = self._get_fallback_url()
                     if fallback_url:
                         if self.verbose:
-                            print(f"  XML feed not available, trying HTML fallback...", file=sys.stderr)
+                            print(f"  XML feed not available, trying HTML fallback: {fallback_url}", file=sys.stderr)
                         return self._scrape_html(fallback_url, headers)
                     else:
                         print(f"Error fetching URL: {e}", file=sys.stderr)
