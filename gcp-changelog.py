@@ -60,6 +60,10 @@ SERVICE_GROUPS = {
     'workspace': [
         'apps-script', 'cloud-search', 'docs-api'
     ],
+    'firebase': [
+        'firebase', 'firebase-android', 'firebase-ios', 'firebase-js', 'firebase-admin',
+        'firebase-cpp', 'firebase-unity', 'firebase-flutter', 'firestore', 'firebase-extensions'
+    ],
 }
 
 # GCP Service XML Feed URLs
@@ -174,6 +178,17 @@ SERVICE_FEEDS = {
     'cloud-search': 'https://developers.google.com/feeds/cloud-search-release-notes.xml',
     'docs-api': 'https://developers.google.com/feeds/docs-release-notes.xml',
     
+    # Firebase
+    'firebase': 'https://firebase.google.com/feeds/release-notes.xml',
+    'firebase-android': 'https://firebase.google.com/feeds/android-release-notes.xml',
+    'firebase-ios': 'https://firebase.google.com/feeds/ios-release-notes.xml',
+    'firebase-js': 'https://firebase.google.com/feeds/js-release-notes.xml',
+    'firebase-admin': 'https://firebase.google.com/feeds/admin-release-notes.xml',
+    'firebase-cpp': 'https://firebase.google.com/feeds/cpp-release-notes.xml',
+    'firebase-unity': 'https://firebase.google.com/feeds/unity-release-notes.xml',
+    'firebase-flutter': 'https://firebase.google.com/feeds/flutter-release-notes.xml',
+    'firebase-extensions': 'https://firebase.google.com/feeds/extensions-release-notes.xml',
+    
 }
 
 # HTML fallback URLs for services where XML feeds may not be available
@@ -287,6 +302,17 @@ SERVICE_HTML_FALLBACKS = {
     'apps-script': 'https://developers.google.com/apps-script/releases',
     'cloud-search': 'https://developers.google.com/cloud-search/docs/release-notes',
     'docs-api': 'https://developers.google.com/docs/api/release-notes',
+    
+    # Firebase
+    'firebase': 'https://firebase.google.com/support/release-notes',
+    'firebase-android': 'https://firebase.google.com/support/release-notes/android',
+    'firebase-ios': 'https://firebase.google.com/support/release-notes/ios',
+    'firebase-js': 'https://firebase.google.com/support/release-notes/js',
+    'firebase-admin': 'https://firebase.google.com/support/release-notes/admin/node',
+    'firebase-cpp': 'https://firebase.google.com/support/release-notes/cpp',
+    'firebase-unity': 'https://firebase.google.com/support/release-notes/unity',
+    'firebase-flutter': 'https://firebase.google.com/support/release-notes/flutter',
+    'firebase-extensions': 'https://firebase.google.com/support/release-notes/extensions',
 }
 
 def check_dependencies():
