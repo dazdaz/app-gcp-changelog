@@ -1,5 +1,7 @@
 
-# Google Cloud Release Notes Scraper
+# gcp-changelog
+
+A command-line tool to track and monitor Google Cloud Platform release notes.
 
 ## What This Program Does
 
@@ -10,8 +12,9 @@ This is a **release notes scraper** that automatically downloads and organizes r
 - **100+ GCP Services**: Built-in support for Cloud Run, GKE, BigQuery, Vertex AI, and many more
 - **Service Groups**: Query multiple services at once by domain (AI, Security, Networking, etc.)
 - **XML Feed Parsing**: Reads directly from Google's official release notes XML feeds
+- **HTML Fallback**: Automatically falls back to HTML scraping when XML feeds are unavailable
 - **Smart Categorization**: Automatically tags items as GA, Preview, Breaking Changes, Security, etc.
-- **Flexible Filtering**: Filter by months or specific date ranges
+- **Flexible Filtering**: Filter by days, months, or specific date ranges
 - **Category Filtering**: Filter by release type (GA, preview, breaking, security, etc.)
 - **Multiple Output Formats**: Text, Markdown, JSON, or styled HTML
 
@@ -22,25 +25,28 @@ This is a **release notes scraper** that automatically downloads and organizes r
 uv venv && source .venv/bin/activate && uv pip install -r requirements.txt
 
 # Get Cloud Run release notes (last 12 months)
-./gcpwatch.py -s cloud-run
+./gcp-changelog.py -s cloud-run
+
+# Get release notes from last 7 days
+./gcp-changelog.py -s cloud-run -d 7
 
 # Get GKE notes for last 6 months as HTML
-./gcpwatch.py -s gke -m 6 -o html -f gke_notes.html
+./gcp-changelog.py -s gke -m 6 -o html -f gke_notes.html
 
 # Query all AI services at once
-./gcpwatch.py -g ai -m 3
+./gcp-changelog.py -g ai -m 3
 
 # List all available services and groups
-./gcpwatch.py --list-services
-./gcpwatch.py --list-groups
+./gcp-changelog.py --list-services
+./gcp-changelog.py --list-groups
 ```
 
 ## Command Line Reference
 
 ```
-usage: gcpwatch.py [-h] [-s SERVICE | -g GROUP | -u URL | --list-services | --list-groups]
-                   [-m MONTHS] [--start-date START_DATE] [--end-date END_DATE]
-                   [-c CATEGORY] [-o {text,json,markdown,html}] [-f FILE] [-v]
+usage: gcp-changelog.py [-h] [-s SERVICE | -g GROUP | -u URL | --list-services | --list-groups]
+                        [-d DAYS] [-m MONTHS] [--start-date START_DATE] [--end-date END_DATE]
+                        [-c CATEGORY] [-o {text,json,markdown,html}] [-f FILE] [-v]
 
 Scrape release notes from documentation pages or XML feeds
 
@@ -60,6 +66,7 @@ options:
   -v, --verbose         Enable verbose output
 
 date filtering:
+  -d, --days DAYS       Number of days to look back
   -m, --months MONTHS   Number of months to look back (default: 12)
   --start-date START_DATE
                         Start date for filtering (format: YYYY-MM-DD)
@@ -72,16 +79,19 @@ date filtering:
 
 ```bash
 # Cloud Run release notes
-./gcpwatch.py -s cloud-run
+./gcp-changelog.py -s cloud-run
 
 # GKE release notes for last 6 months
-./gcpwatch.py -s gke -m 6
+./gcp-changelog.py -s gke -m 6
+
+# Release notes from last 30 days
+./gcp-changelog.py -s bigquery -d 30
 
 # BigQuery notes as JSON
-./gcpwatch.py -s bigquery -o json -f bigquery.json
+./gcp-changelog.py -s bigquery -o json -f bigquery.json
 
 # Vertex AI notes as HTML
-./gcpwatch.py -s vertex-ai -o html -f vertex.html
+./gcp-changelog.py -s vertex-ai -o html -f vertex.html
 ```
 
 ### Service Groups
@@ -90,19 +100,19 @@ Query multiple services at once by domain:
 
 ```bash
 # All AI/ML service updates
-./gcpwatch.py -g ai -m 3
+./gcp-changelog.py -g ai -m 3
 
 # All security service updates
-./gcpwatch.py -g security -c breaking -c deprecated
+./gcp-changelog.py -g security -c breaking -c deprecated
 
-# All GKE channel updates
-./gcpwatch.py -g gke -m 1
+# All GKE channel updates from last 14 days
+./gcp-changelog.py -g gke -d 14
 
 # All database updates as HTML
-./gcpwatch.py -g databases -o html -f db_updates.html
+./gcp-changelog.py -g databases -o html -f db_updates.html
 
 # List available groups
-./gcpwatch.py --list-groups
+./gcp-changelog.py --list-groups
 ```
 
 Available groups:
@@ -124,27 +134,33 @@ Available groups:
 ### Date Range Filtering
 
 ```bash
+# Last 7 days
+./gcp-changelog.py -s cloud-run -d 7
+
+# Last 30 days
+./gcp-changelog.py -s bigquery -d 30
+
 # Notes from January to June 2024
-./gcpwatch.py -s cloud-run --start-date 2024-01-01 --end-date 2024-06-30
+./gcp-changelog.py -s cloud-run --start-date 2024-01-01 --end-date 2024-06-30
 
 # Notes since June 2024
-./gcpwatch.py -s bigquery --start-date 2024-06-01
+./gcp-changelog.py -s bigquery --start-date 2024-06-01
 
 # Last 3 months
-./gcpwatch.py -s gke -m 3
+./gcp-changelog.py -s gke -m 3
 ```
 
 ### Category Filtering
 
 ```bash
 # Only GA and Preview features
-./gcpwatch.py -s cloud-run -c ga -c public-preview
+./gcp-changelog.py -s cloud-run -c ga -c public-preview
 
 # Only breaking changes and deprecations
-./gcpwatch.py -s gke -c breaking -c deprecated
+./gcp-changelog.py -s gke -c breaking -c deprecated
 
 # Security updates only
-./gcpwatch.py -s compute-engine -c security
+./gcp-changelog.py -s compute-engine -c security
 ```
 
 Available categories: `ga`, `public-preview`, `breaking`, `security`, `deprecated`, `fixed`, `issue`, `change`, `announcement`, `libraries`, `update`
@@ -153,26 +169,26 @@ Available categories: `ga`, `public-preview`, `breaking`, `security`, `deprecate
 
 ```bash
 # Custom XML feed URL
-./gcpwatch.py -u https://cloud.google.com/feeds/cloud-run-release-notes.xml
+./gcp-changelog.py -u https://cloud.google.com/feeds/cloud-run-release-notes.xml
 
 # HTML release notes page
-./gcpwatch.py -u https://cloud.google.com/run/docs/release-notes
+./gcp-changelog.py -u https://cloud.google.com/run/docs/release-notes
 ```
 
 ### Output Formats
 
 ```bash
 # Plain text (default)
-./gcpwatch.py -s cloud-run
+./gcp-changelog.py -s cloud-run
 
 # Markdown (great for docs)
-./gcpwatch.py -s cloud-run -o markdown -f notes.md
+./gcp-changelog.py -o markdown -s cloud-run -f notes.md
 
 # JSON (for automation)
-./gcpwatch.py -s cloud-run -o json -f notes.json
+./gcp-changelog.py -s cloud-run -o json -f notes.json
 
 # HTML (styled webpage)
-./gcpwatch.py -s cloud-run -o html -f notes.html
+./gcp-changelog.py -s cloud-run -o html -f notes.html
 ```
 
 ## What It Categorizes
@@ -205,8 +221,8 @@ The scraper automatically detects and labels:
 
 ```bash
 # Clone the repository
-git clone <repo-url>
-cd app-gcpwatch
+git clone https://github.com/dazdaz/gcp-changelog
+cd gcp-changelog
 
 # Create virtual environment and install dependencies
 uv venv
