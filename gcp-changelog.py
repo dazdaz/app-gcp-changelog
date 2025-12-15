@@ -371,6 +371,15 @@ class ReleaseNotesScraper:
                 r'(\d{1,2}/\d{1,2}/\d{4})',    # 01/15/2024
             ]
         },
+        'firebase': {
+            'container': ['main', 'article', '.devsite-article-body', '[role="main"]'],
+            'date_headers': ['h2', 'h3', 'h4'],
+            'content': ['p', 'ul', 'ol', 'li', 'div'],
+            'date_patterns': [
+                r'(\w+\s+\d{1,2},\s+\d{4})',  # January 15, 2024
+                r'(\d{4}-\d{2}-\d{2})',       # 2024-01-15
+            ]
+        },
         'generic': {
             'container': ['main', 'article', '.content', '#content', '.release-notes'],
             'date_headers': ['h2', 'h3', 'h4'],
@@ -422,6 +431,8 @@ class ReleaseNotesScraper:
         """Detect the documentation platform based on URL."""
         if 'cloud.google.com' in url or 'developers.google.com' in url:
             return 'google_cloud'
+        if 'firebase.google.com' in url:
+            return 'firebase'
         return 'generic'
     
     def _is_xml_url(self, url: str) -> bool:
@@ -583,6 +594,9 @@ class ReleaseNotesScraper:
             for script in soup(["script", "style"]):
                 script.decompose()
             
+            # Update platform detection based on actual URL being scraped
+            self.platform = self._detect_platform(url)
+            
             # Get platform-specific selectors
             selectors = self.PLATFORM_SELECTORS[self.platform]
             
@@ -596,8 +610,12 @@ class ReleaseNotesScraper:
             if not content_area:
                 content_area = soup.body or soup
             
-            # Try multiple strategies to find release notes
-            self._parse_structured_releases(content_area, selectors)
+            # Use platform-specific parsing for Firebase
+            if self.platform == 'firebase':
+                self._parse_firebase_releases(content_area, selectors)
+            else:
+                # Try multiple strategies to find release notes
+                self._parse_structured_releases(content_area, selectors)
             
             if not self.releases:
                 self._parse_unstructured_releases(content_area, selectors)
@@ -859,6 +877,136 @@ class ReleaseNotesScraper:
         
         return items
     
+    def _parse_firebase_releases(self, content_area, selectors):
+        """Parse Firebase-specific release notes format."""
+        # Firebase uses a different structure - look for version headers
+        # Common patterns: "Version X.Y.Z - Month DD, YYYY" or just date headers
+        
+        # First, try to find version sections (h2/h3 with version numbers)
+        for header_tag in ['h2', 'h3', 'h4']:
+            headers = content_area.find_all(header_tag)
+            
+            for header in headers:
+                header_text = header.get_text(strip=True)
+                
+                # Try to extract date from header text
+                # Firebase formats: "November 20, 2025", "2025-11-20", "Version X.Y.Z - November 20, 2025"
+                date_found = None
+                date_str = None
+                
+                for pattern in selectors['date_patterns']:
+                    match = re.search(pattern, header_text)
+                    if match:
+                        date_str = match.group(1)
+                        date_found = self._parse_date(date_str)
+                        break
+                
+                if date_found:
+                    # Collect all content after this header until next same-level header
+                    items = []
+                    sibling = header.find_next_sibling()
+                    
+                    while sibling and sibling.name != header_tag:
+                        # Check for list items
+                        if sibling.name in ['ul', 'ol']:
+                            for li in sibling.find_all('li', recursive=False):
+                                text = li.get_text(strip=True)
+                                html_content = str(li)
+                                links = [a.get('href') for a in li.find_all('a') if a.get('href')]
+                                if text and len(text) > 5:
+                                    items.append({
+                                        'text': html_content,
+                                        'category': self._categorize_item(element=li, text=text),
+                                        'urls': links
+                                    })
+                        elif sibling.name == 'li':
+                            text = sibling.get_text(strip=True)
+                            html_content = str(sibling)
+                            links = [a.get('href') for a in sibling.find_all('a') if a.get('href')]
+                            if text and len(text) > 5:
+                                items.append({
+                                    'text': html_content,
+                                    'category': self._categorize_item(element=sibling, text=text),
+                                    'urls': links
+                                })
+                        elif sibling.name in ['p', 'div']:
+                            text = sibling.get_text(strip=True)
+                            # Skip short divs or empty paragraphs
+                            if text and len(text) > 10:
+                                html_content = str(sibling)
+                                links = [a.get('href') for a in sibling.find_all('a') if a.get('href')]
+                                items.append({
+                                    'text': html_content,
+                                    'category': self._categorize_item(element=sibling, text=text),
+                                    'urls': links
+                                })
+                        
+                        sibling = sibling.find_next_sibling()
+                    
+                    # If no items found from siblings, check nested content
+                    if not items:
+                        # Look for lists within the header's parent section
+                        parent_section = header.parent
+                        if parent_section:
+                            for ul in parent_section.find_all(['ul', 'ol']):
+                                for li in ul.find_all('li', recursive=False):
+                                    text = li.get_text(strip=True)
+                                    html_content = str(li)
+                                    links = [a.get('href') for a in li.find_all('a') if a.get('href')]
+                                    if text and len(text) > 5:
+                                        items.append({
+                                            'text': html_content,
+                                            'category': self._categorize_item(element=li, text=text),
+                                            'urls': links
+                                        })
+                    
+                    # If still no items, use the header text itself as a release note
+                    if not items and len(header_text) > 15:
+                        items.append({
+                            'text': header_text,
+                            'category': self._categorize_item(text=header_text),
+                            'urls': []
+                        })
+                    
+                    if items:
+                        self.releases.append({
+                            'date': date_found,
+                            'date_str': date_str,
+                            'items': items,
+                            'url': self.url
+                        })
+        
+        # Also try to parse table-based release notes (some Firebase pages use tables)
+        tables = content_area.find_all('table')
+        for table in tables:
+            rows = table.find_all('tr')
+            for row in rows:
+                cells = row.find_all(['td', 'th'])
+                if len(cells) >= 2:
+                    # Try to find date in first cell
+                    first_cell = cells[0].get_text(strip=True)
+                    for pattern in selectors['date_patterns']:
+                        match = re.search(pattern, first_cell)
+                        if match:
+                            date_str = match.group(1)
+                            date_found = self._parse_date(date_str)
+                            if date_found:
+                                # Use remaining cells as content
+                                content_text = ' '.join(c.get_text(strip=True) for c in cells[1:])
+                                if content_text and len(content_text) > 10:
+                                    links = [a.get('href') for a in row.find_all('a') if a.get('href')]
+                                    self.releases.append({
+                                        'date': date_found,
+                                        'date_str': date_str,
+                                        'items': [{
+                                            'text': content_text,
+                                            'category': self._categorize_item(text=content_text),
+                                            'urls': links
+                                        }],
+                                        'url': self.url
+                                    })
+                            break
+
     def _parse_structured_releases(self, content_area, selectors):
         """Parse releases with clear date headers."""
         for header_tag in selectors['date_headers']:
