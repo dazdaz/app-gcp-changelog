@@ -975,7 +975,7 @@ class ReleaseNotesScraper:
                         })
     
         # Continue with existing text-based parsing
-        all_text_elements = content_area.find_all(text=True)
+        all_text_elements = content_area.find_all(string=True)
         
         for text in all_text_elements:
             text = text.strip()
