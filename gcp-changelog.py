@@ -50,7 +50,7 @@ SERVICE_GROUPS = {
         'cloud-scheduler', 'config-connector', 'resource-manager'
     ],
     'ai': [
-        'ai-app-builder', 'dialogflow', 'document-ai', 'gemini-code-assist',
+        'ai-app-builder', 'antigravity', 'dialogflow', 'document-ai', 'gemini-code-assist',
         'speech-to-text', 'talent-solution', 'text-to-speech', 'translation',
         'vertex-ai', 'video-intelligence'
     ],
@@ -158,6 +158,7 @@ SERVICE_FEEDS = {
     
     # AI & Machine Learning
     'ai-app-builder': 'https://cloud.google.com/feeds/generative-ai-app-builder-release-notes.xml',
+    'antigravity': 'https://antigravity.google/changelog',  # No XML feed, uses HTML
     'dialogflow': 'https://cloud.google.com/feeds/dialogflow-release-notes.xml',
     'document-ai': 'https://cloud.google.com/feeds/document-ai-release-notes.xml',
     'gemini-code-assist': 'https://cloud.google.com/feeds/gemini-code-assist-release-notes.xml',
@@ -283,6 +284,7 @@ SERVICE_HTML_FALLBACKS = {
     
     # AI & Machine Learning
     'ai-app-builder': 'https://cloud.google.com/generative-ai-app-builder/docs/release-notes',
+    'antigravity': 'https://antigravity.google/changelog',
     'dialogflow': 'https://cloud.google.com/dialogflow/docs/release-notes',
     'document-ai': 'https://cloud.google.com/document-ai/docs/release-notes',
     'gemini-code-assist': 'https://cloud.google.com/gemini/docs/codeassist/release-notes',
@@ -380,6 +382,16 @@ class ReleaseNotesScraper:
                 r'(\d{4}-\d{2}-\d{2})',       # 2024-01-15
             ]
         },
+        'antigravity': {
+            'container': ['main', 'article', '.changelog', '[role="main"]', 'body'],
+            'date_headers': ['h2', 'h3', 'h4', 'time'],
+            'content': ['p', 'ul', 'ol', 'li', 'div', 'section'],
+            'date_patterns': [
+                r'(\w+\s+\d{1,2},\s+\d{4})',  # January 15, 2024
+                r'(\d{4}-\d{2}-\d{2})',       # 2024-01-15
+                r'(\d{1,2}\s+\w+\s+\d{4})',   # 15 January 2024
+            ]
+        },
         'generic': {
             'container': ['main', 'article', '.content', '#content', '.release-notes'],
             'date_headers': ['h2', 'h3', 'h4'],
@@ -433,11 +445,20 @@ class ReleaseNotesScraper:
             return 'google_cloud'
         if 'firebase.google.com' in url:
             return 'firebase'
+        if 'antigravity.google' in url:
+            return 'antigravity'
         return 'generic'
     
     def _is_xml_url(self, url: str) -> bool:
         """Check if the URL is an XML feed."""
+        # AntiGravity uses embedded JS data, not XML
+        if 'antigravity.google' in url:
+            return False
         return url.endswith('.xml') or '/feeds/' in url
+    
+    def _is_antigravity_url(self, url: str) -> bool:
+        """Check if the URL is AntiGravity changelog."""
+        return 'antigravity.google' in url
     
     def _parse_date(self, date_str: str) -> Optional[datetime]:
         """Parse date from various formats."""
@@ -572,6 +593,10 @@ class ReleaseNotesScraper:
                 print(f"Error parsing XML content: {e}", file=sys.stderr)
                 return []
         
+        # Check if it's AntiGravity - use special JS extraction method
+        if self._is_antigravity_url(self.url):
+            return self._scrape_antigravity_js(headers)
+        
         # Direct HTML scraping
         return self._scrape_html(self.url, headers)
     
@@ -610,9 +635,11 @@ class ReleaseNotesScraper:
             if not content_area:
                 content_area = soup.body or soup
             
-            # Use platform-specific parsing for Firebase
+            # Use platform-specific parsing
             if self.platform == 'firebase':
                 self._parse_firebase_releases(content_area, selectors)
+            elif self.platform == 'antigravity':
+                self._parse_antigravity_releases(content_area, selectors)
             else:
                 # Try multiple strategies to find release notes
                 self._parse_structured_releases(content_area, selectors)
@@ -877,6 +904,289 @@ class ReleaseNotesScraper:
         
         return items
     
+    def _scrape_antigravity_js(self, headers: dict) -> List[Dict]:
+        """Scrape AntiGravity changelog by extracting data from JavaScript bundle.
+        
+        AntiGravity is a JavaScript SPA (Angular) that embeds changelog data
+        directly in its compiled JavaScript bundle. This method:
+        1. Fetches the main page to find the current JS bundle filename
+        2. Fetches the JS bundle
+        3. Extracts the embedded changelog data using regex
+        4. Parses it into our standard release format
+        """
+        try:
+            # Step 1: Fetch the main page to find the JS bundle filename
+            response = self.requests.get(self.url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            # Find the main JS bundle (e.g., main-WHICPWHT.js)
+            js_bundle_match = re.search(r'src="(main-[A-Za-z0-9]+\.js)"', response.text)
+            if not js_bundle_match:
+                if self.verbose:
+                    print("  Could not find JS bundle in AntiGravity page", file=sys.stderr)
+                return []
+            
+            js_bundle_name = js_bundle_match.group(1)
+            js_bundle_url = f"https://antigravity.google/{js_bundle_name}"
+            
+            if self.verbose:
+                print(f"  Found JS bundle: {js_bundle_name}", file=sys.stderr)
+            
+            # Step 2: Fetch the JS bundle
+            js_response = self.requests.get(js_bundle_url, headers=headers, timeout=30)
+            js_response.raise_for_status()
+            js_content = js_response.text
+            
+            # Step 3: Extract the changelog data
+            # The data is in a variable like: var j9={title:"...",sections:[...]}
+            # We need to find and extract the sections array
+            
+            # Find the changelog data pattern - looking for the sections array
+            # Pattern: sections:[{version:"...",description:"...",accordion:{...}}]
+            changelog_match = re.search(
+                r'var\s+\w+\s*=\s*\{[^}]*title:\s*"Google Antigravity Changelog"[^}]*sections:\s*(\[[^\]]*\{[^}]*version:[^}]*\}[^\]]*\])',
+                js_content,
+                re.DOTALL
+            )
+            
+            if not changelog_match:
+                # Try alternative pattern - extract by finding the semicolon-delimited statement
+                # Split by semicolons and find the one containing changelog sections
+                statements = js_content.split(';')
+                changelog_statement = None
+                for stmt in statements:
+                    if 'Google Antigravity Changelog' in stmt and 'sections:' in stmt:
+                        changelog_statement = stmt
+                        break
+                
+                if not changelog_statement:
+                    if self.verbose:
+                        print("  Could not find changelog data in JS bundle", file=sys.stderr)
+                    return []
+                
+                # Extract sections from the statement
+                sections_start = changelog_statement.find('sections:[')
+                if sections_start == -1:
+                    return []
+                
+                # Find the matching closing bracket
+                sections_str = self._extract_js_array(changelog_statement[sections_start + 9:])
+            else:
+                sections_str = changelog_match.group(1)
+            
+            # Step 4: Parse the sections into releases
+            releases = self._parse_antigravity_sections(sections_str if 'sections_str' in dir() else js_content)
+            
+            # Filter by date
+            filtered_releases = self._filter_by_date(releases)
+            
+            # Filter by category
+            filtered_releases = self._filter_by_category(filtered_releases)
+            
+            return filtered_releases
+            
+        except self.requests.RequestException as e:
+            print(f"Error fetching AntiGravity data: {e}", file=sys.stderr)
+            return []
+        except Exception as e:
+            if self.verbose:
+                print(f"Error parsing AntiGravity JS: {e}", file=sys.stderr)
+            return []
+    
+    def _extract_js_array(self, js_str: str) -> str:
+        """Extract a JavaScript array from a string, handling nested brackets."""
+        depth = 0
+        start = 0
+        for i, char in enumerate(js_str):
+            if char == '[':
+                if depth == 0:
+                    start = i
+                depth += 1
+            elif char == ']':
+                depth -= 1
+                if depth == 0:
+                    return js_str[start:i+1]
+        return js_str
+    
+    def _parse_antigravity_sections(self, js_content: str) -> List[Dict]:
+        """Parse AntiGravity changelog sections from JavaScript content."""
+        releases = []
+        
+        # Extract individual section objects using regex
+        # Each section has: version:"X.Y.Z<br>Mon DD, YYYY", description:"...", accordion:{...}
+        
+        # Pattern for version with date
+        version_pattern = re.compile(
+            r'version:\s*"([^"]*?)<br>([^"]*?)"[^}]*?description:\s*"([^"]*?)"[^}]*?accordion:\s*\{[^}]*?changes:\s*"([^"]*?)"[^}]*?items:\s*\[(.*?)\]\s*\}',
+            re.DOTALL
+        )
+        
+        # Also try simpler pattern if the above doesn't match
+        simple_version_pattern = re.compile(
+            r'\{[^{]*?version:\s*"([^"]+)"[^}]*?description:\s*"([^"]+)"',
+            re.DOTALL
+        )
+        
+        matches = version_pattern.findall(js_content)
+        
+        if not matches:
+            # Try the simpler pattern
+            simple_matches = simple_version_pattern.findall(js_content)
+            for version_raw, description in simple_matches:
+                # Parse the version string (e.g., "1.11.17<br>Dec 8, 2025")
+                if '<br>' in version_raw:
+                    version, date_str = version_raw.split('<br>', 1)
+                else:
+                    version = version_raw
+                    date_str = ""
+                
+                # Try to parse the date
+                parsed_date = self._parse_antigravity_date(date_str)
+                
+                if parsed_date:
+                    items = [{
+                        'text': f"<strong>{version}</strong>: {description}",
+                        'category': self._categorize_item(text=description),
+                        'urls': []
+                    }]
+                    
+                    releases.append({
+                        'date': parsed_date,
+                        'date_str': date_str.strip(),
+                        'items': items,
+                        'url': self.url
+                    })
+        else:
+            for version, date_str, description, changes, items_str in matches:
+                # Parse the date
+                parsed_date = self._parse_antigravity_date(date_str)
+                
+                if parsed_date:
+                    items = []
+                    
+                    # Add the main changes as an item
+                    if changes:
+                        # Clean HTML from changes
+                        changes_text = re.sub(r'<[^>]+>', ' ', changes).strip()
+                        changes_text = re.sub(r'\\/', '/', changes_text)  # Unescape slashes
+                        if changes_text:
+                            items.append({
+                                'text': f"<strong>{version}</strong>: {changes_text}",
+                                'category': self._categorize_item(text=description + " " + changes_text),
+                                'urls': []
+                            })
+                    
+                    # Parse accordion items (Improvements, Fixes, Patches)
+                    item_pattern = re.compile(r'\{title:\s*"([^"]+)"[^}]*accordion_items:\s*\[(.*?)\]\s*\}', re.DOTALL)
+                    for item_title, accordion_items in item_pattern.findall(items_str):
+                        # Extract individual accordion items
+                        text_pattern = re.compile(r'\{text:\s*"([^"]+)"\}')
+                        for item_text in text_pattern.findall(accordion_items):
+                            if item_text:
+                                category = 'update'
+                                if item_title.lower() == 'improvements':
+                                    category = 'ga'
+                                elif item_title.lower() == 'fixes':
+                                    category = 'fixed'
+                                elif item_title.lower() == 'patches':
+                                    category = 'fixed'
+                                
+                                items.append({
+                                    'text': f"[{item_title}] {item_text}",
+                                    'category': category,
+                                    'urls': []
+                                })
+                    
+                    if items:
+                        releases.append({
+                            'date': parsed_date,
+                            'date_str': date_str.strip(),
+                            'items': items,
+                            'url': self.url
+                        })
+        
+        # If regex parsing didn't work well, try a more direct approach
+        if not releases:
+            releases = self._parse_antigravity_direct(js_content)
+        
+        return releases
+    
+    def _parse_antigravity_direct(self, js_content: str) -> List[Dict]:
+        """Direct parsing of AntiGravity changelog from JS content."""
+        releases = []
+        
+        # Find all version/date patterns
+        # Format: "1.11.17<br>Dec 8, 2025"
+        version_date_pattern = re.compile(r'"(\d+\.\d+\.\d+)<br>(\w+\s+\d+,\s+\d{4})"')
+        
+        for match in version_date_pattern.finditer(js_content):
+            version = match.group(1)
+            date_str = match.group(2)
+            
+            parsed_date = self._parse_antigravity_date(date_str)
+            
+            if parsed_date:
+                # Find the description that follows
+                desc_start = match.end()
+                desc_match = re.search(r'description:\s*"([^"]+)"', js_content[desc_start:desc_start+500])
+                description = desc_match.group(1) if desc_match else f"Version {version}"
+                
+                # Find changes text
+                changes_match = re.search(r'changes:\s*"<p>([^<]+)</p>"', js_content[desc_start:desc_start+2000])
+                changes_text = changes_match.group(1) if changes_match else ""
+                
+                items = [{
+                    'text': f"<strong>v{version}</strong> - {description}: {changes_text}".strip(),
+                    'category': self._categorize_item(text=description + " " + changes_text),
+                    'urls': []
+                }]
+                
+                # Find improvements, fixes, patches
+                items_section = js_content[desc_start:desc_start+3000]
+                
+                for section_name, category in [('Improvements', 'ga'), ('Fixes', 'fixed'), ('Patches', 'fixed')]:
+                    section_pattern = re.compile(
+                        rf'title:\s*"{section_name}"[^]]*accordion_items:\s*\[([^\]]*)\]',
+                        re.DOTALL
+                    )
+                    section_match = section_pattern.search(items_section)
+                    if section_match:
+                        item_texts = re.findall(r'text:\s*"([^"]+)"', section_match.group(1))
+                        for item_text in item_texts:
+                            if item_text:
+                                items.append({
+                                    'text': f"[{section_name}] {item_text}",
+                                    'category': category,
+                                    'urls': []
+                                })
+                
+                releases.append({
+                    'date': parsed_date,
+                    'date_str': date_str,
+                    'items': items,
+                    'url': self.url
+                })
+        
+        return releases
+    
+    def _parse_antigravity_date(self, date_str: str) -> Optional[datetime]:
+        """Parse date from AntiGravity format (e.g., 'Dec 8, 2025')."""
+        date_str = date_str.strip()
+        
+        formats = [
+            '%b %d, %Y',      # Dec 8, 2025
+            '%B %d, %Y',      # December 8, 2025
+            '%Y-%m-%d',       # 2025-12-08
+        ]
+        
+        for fmt in formats:
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+        
+        return None
+
     def _parse_firebase_releases(self, content_area, selectors):
         """Parse Firebase-specific release notes format."""
         # Firebase uses a different structure - look for version headers
