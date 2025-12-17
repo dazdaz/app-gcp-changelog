@@ -190,140 +190,6 @@ SERVICE_FEEDS = {
     'docs-api': 'https://developers.google.com/feeds/docs-release-notes.xml',
     
     # Firebase
-    'firebase': 'https://firebase.google.com/feeds/release-notes.xml',
-    'firebase-android': 'https://firebase.google.com/feeds/android-release-notes.xml',
-    'firebase-ios': 'https://firebase.google.com/feeds/ios-release-notes.xml',
-    'firebase-js': 'https://firebase.google.com/feeds/js-release-notes.xml',
-    'firebase-admin': 'https://firebase.google.com/feeds/admin-release-notes.xml',
-    'firebase-cpp': 'https://firebase.google.com/feeds/cpp-release-notes.xml',
-    'firebase-unity': 'https://firebase.google.com/feeds/unity-release-notes.xml',
-    'firebase-flutter': 'https://firebase.google.com/feeds/flutter-release-notes.xml',
-    'firebase-extensions': 'https://firebase.google.com/feeds/extensions-release-notes.xml',
-    
-}
-
-# HTML fallback URLs for services where XML feeds may not be available
-SERVICE_HTML_FALLBACKS = {
-    # Applications & Development
-    'application-design-center': 'https://cloud.google.com/application-design-center/docs/release-notes',
-    'apphub': 'https://cloud.google.com/app-hub/docs/release-notes',
-    'api-gateway': 'https://cloud.google.com/api-gateway/docs/release-notes',
-    'apigee': 'https://cloud.google.com/apigee/docs/release-notes',
-    'cloud-build': 'https://cloud.google.com/build/docs/release-notes',
-    'cloud-deploy': 'https://cloud.google.com/deploy/docs/release-notes',
-    'cloud-functions': 'https://cloud.google.com/functions/docs/release-notes',
-    'cloud-run': 'https://cloud.google.com/run/docs/release-notes',
-    'cloud-sdk': 'https://cloud.google.com/sdk/docs/release-notes',
-    'cloud-tasks': 'https://cloud.google.com/tasks/docs/release-notes',
-    'cloud-trace': 'https://cloud.google.com/trace/docs/release-notes',
-    'deployment-manager': 'https://cloud.google.com/deployment-manager/docs/release-notes',
-    'endpoints': 'https://cloud.google.com/endpoints/docs/release-notes',
-    'eventarc': 'https://cloud.google.com/eventarc/docs/release-notes',
-    'source-repositories': 'https://cloud.google.com/source-repositories/docs/release-notes',
-    'workflows': 'https://cloud.google.com/workflows/docs/release-notes',
-    'workstations': 'https://cloud.google.com/workstations/docs/release-notes',
-    
-    # Databases & Data Analytics
-    'alloydb': 'https://cloud.google.com/alloydb/docs/release-notes',
-    'bigquery': 'https://cloud.google.com/bigquery/docs/release-notes',
-    'data-fusion': 'https://cloud.google.com/data-fusion/docs/release-notes',
-    'firestore': 'https://cloud.google.com/firestore/docs/release-notes',
-    'spanner': 'https://cloud.google.com/spanner/docs/release-notes',
-    'cloud-sql': 'https://cloud.google.com/sql/docs/release-notes',
-    'data-catalog': 'https://cloud.google.com/data-catalog/docs/release-notes',
-    'database-migration': 'https://cloud.google.com/database-migration/docs/release-notes',
-    'dataflow': 'https://cloud.google.com/dataflow/docs/release-notes',
-    'dataproc': 'https://cloud.google.com/dataproc/docs/release-notes',
-    'datastore': 'https://cloud.google.com/datastore/docs/release-notes',
-    'memorystore-memcached': 'https://cloud.google.com/memorystore/docs/memcached/release-notes',
-    'memorystore-redis': 'https://cloud.google.com/memorystore/docs/redis/release-notes',
-    
-    # Security & Identity
-    'binary-authorization': 'https://cloud.google.com/binary-authorization/docs/release-notes',
-    'certificate-authority': 'https://cloud.google.com/certificate-authority-service/docs/release-notes',
-    'cloud-armor': 'https://cloud.google.com/armor/docs/release-notes',
-    'cloud-kms': 'https://cloud.google.com/kms/docs/release-notes',
-    'iam': 'https://cloud.google.com/iam/docs/release-notes',
-    'identity-platform': 'https://cloud.google.com/identity-platform/docs/release-notes',
-    'recaptcha': 'https://cloud.google.com/recaptcha-enterprise/docs/release-notes',
-    'secret-manager': 'https://cloud.google.com/secret-manager/docs/release-notes',
-    'security-command-center': 'https://cloud.google.com/security-command-center/docs/release-notes',
-    'vpc-service-controls': 'https://cloud.google.com/vpc-service-controls/docs/release-notes',
-    
-    # Networking
-    'cloud-cdn': 'https://cloud.google.com/cdn/docs/release-notes',
-    'cloud-dns': 'https://cloud.google.com/dns/docs/release-notes',
-    'cloud-interconnect': 'https://cloud.google.com/network-connectivity/docs/interconnect/release-notes',
-    'load-balancing': 'https://cloud.google.com/load-balancing/docs/release-notes',
-    'cloud-nat': 'https://cloud.google.com/nat/docs/release-notes',
-    'cloud-router': 'https://cloud.google.com/network-connectivity/docs/router/release-notes',
-    'service-mesh': 'https://cloud.google.com/service-mesh/docs/release-notes',
-    'vpc': 'https://cloud.google.com/vpc/docs/release-notes',
-    'network-intelligence': 'https://cloud.google.com/network-intelligence-center/docs/release-notes',
-    'network-tiers': 'https://cloud.google.com/network-tiers/docs/release-notes',
-    'service-directory': 'https://cloud.google.com/service-directory/docs/release-notes',
-    
-    # Storage
-    'artifact-registry': 'https://cloud.google.com/artifact-registry/docs/release-notes',
-    'cloud-storage': 'https://cloud.google.com/storage/docs/release-notes',
-    'container-registry': 'https://cloud.google.com/container-registry/docs/release-notes',
-    'filestore': 'https://cloud.google.com/filestore/docs/release-notes',
-    'managed-lustre': 'https://cloud.google.com/parallelstore/docs/release-notes',
-    'transfer-appliance': 'https://cloud.google.com/transfer-appliance/docs/release-notes',
-    
-    # Compute / Infrastructure
-    'bare-metal': 'https://cloud.google.com/bare-metal/docs/release-notes',
-    'cloud-hub': 'https://cloud.google.com/network-connectivity/docs/network-connectivity-center/release-notes',
-    'cloud-tpu': 'https://cloud.google.com/tpu/docs/release-notes',
-    'compute-engine': 'https://cloud.google.com/compute/docs/release-notes',
-    'confidential-space': 'https://cloud.google.com/confidential-computing/confidential-space/docs/release-notes',
-    'distributed-cloud-edge': 'https://cloud.google.com/distributed-cloud/edge/latest/docs/release-notes',
-    'anthos-bare-metal': 'https://cloud.google.com/anthos/clusters/docs/bare-metal/latest/release-notes',
-    'anthos-vmware': 'https://cloud.google.com/anthos/clusters/docs/on-prem/latest/release-notes',
-    'vmware-engine': 'https://cloud.google.com/vmware-engine/docs/release-notes',
-    
-    # GKE
-    'gke': 'https://cloud.google.com/kubernetes-engine/docs/release-notes',
-    'gke-rapid': 'https://cloud.google.com/kubernetes-engine/docs/release-notes-rapid',
-    'gke-regular': 'https://cloud.google.com/kubernetes-engine/docs/release-notes-regular',
-    'gke-stable': 'https://cloud.google.com/kubernetes-engine/docs/release-notes-stable',
-    'gke-extended': 'https://cloud.google.com/kubernetes-engine/docs/release-notes-extended',
-    'gke-nochannel': 'https://cloud.google.com/kubernetes-engine/docs/release-notes-nochannel',
-    
-    # Management & Operations
-    'cloud-logging': 'https://cloud.google.com/logging/docs/release-notes',
-    'cloud-monitoring': 'https://cloud.google.com/monitoring/docs/release-notes',
-    'cloud-observability': 'https://cloud.google.com/stackdriver/docs/release-notes',
-    'cloud-profiler': 'https://cloud.google.com/profiler/docs/release-notes',
-    'cloud-scheduler': 'https://cloud.google.com/scheduler/docs/release-notes',
-    'config-connector': 'https://cloud.google.com/config-connector/docs/release-notes',
-    'resource-manager': 'https://cloud.google.com/resource-manager/docs/release-notes',
-    
-    # AI & Machine Learning
-    'ai-app-builder': 'https://cloud.google.com/generative-ai-app-builder/docs/release-notes',
-    'antigravity': 'https://antigravity.google/changelog',
-    'dialogflow': 'https://cloud.google.com/dialogflow/docs/release-notes',
-    'document-ai': 'https://cloud.google.com/document-ai/docs/release-notes',
-    'gemini-cli': 'https://github.com/google-gemini/gemini-cli/releases',
-    'gemini-code-assist': 'https://cloud.google.com/gemini/docs/codeassist/release-notes',
-    'speech-to-text': 'https://cloud.google.com/speech-to-text/docs/release-notes',
-    'talent-solution': 'https://cloud.google.com/talent-solution/docs/release-notes',
-    'text-to-speech': 'https://cloud.google.com/text-to-speech/docs/release-notes',
-    'translation': 'https://cloud.google.com/translate/docs/release-notes',
-    'vertex-ai': 'https://cloud.google.com/vertex-ai/docs/release-notes',
-    'video-intelligence': 'https://cloud.google.com/video-intelligence/docs/release-notes',
-    
-    # Specialized & Other Services
-    'cloud-composer': 'https://cloud.google.com/composer/docs/release-notes',
-    'healthcare-api': 'https://cloud.google.com/healthcare-api/docs/release-notes',
-    'blockchain-node-engine': 'https://cloud.google.com/blockchain-node-engine/docs/release-notes',
-    
-    # Workspace
-    'apps-script': 'https://developers.google.com/apps-script/releases',
-    'cloud-search': 'https://developers.google.com/cloud-search/docs/release-notes',
-    'docs-api': 'https://developers.google.com/docs/api/release-notes',
-    
-    # Firebase
     'firebase': 'https://firebase.google.com/support/release-notes',
     'firebase-android': 'https://firebase.google.com/support/release-notes/android',
     'firebase-ios': 'https://firebase.google.com/support/release-notes/ios',
@@ -333,6 +199,23 @@ SERVICE_HTML_FALLBACKS = {
     'firebase-unity': 'https://firebase.google.com/support/release-notes/unity',
     'firebase-flutter': 'https://firebase.google.com/support/release-notes/flutter',
     'firebase-extensions': 'https://firebase.google.com/support/release-notes/extensions',
+}
+
+# Blog URLs for --blogs option
+BLOG_URLS = {
+    'app-dev': 'https://cloud.google.com/blog/products/application-development',
+    'app-mod': 'https://cloud.google.com/blog/products/application-modernization',
+    'infra': 'https://cloud.google.com/blog/products/infrastructure',
+    'containers': 'https://cloud.google.com/blog/products/containers-kubernetes',
+    'ai-ml': 'https://cloud.google.com/blog/products/ai-machine-learning',
+    'dev-blog': 'https://developers.googleblog.com/',
+}
+
+# HTML fallback URLs for services without XML feeds
+SERVICE_HTML_FALLBACKS = {
+    'application-design-center': 'https://cloud.google.com/application-design-center/docs/release-notes',
+    'cloud-sdk': 'https://cloud.google.com/sdk/docs/release-notes',
+    'antigravity': 'https://antigravity.google/changelog',
 }
 
 def check_dependencies():
@@ -459,6 +342,10 @@ class ReleaseNotesScraper:
         
     def _detect_platform(self, url: str) -> str:
         """Detect the documentation platform based on URL."""
+        if 'cloud.google.com/blog' in url:
+            return 'cloud_blog'
+        if 'developers.googleblog.com' in url:
+            return 'developers_blog'
         if 'cloud.google.com' in url or 'developers.google.com' in url:
             return 'google_cloud'
         if 'firebase.google.com' in url:
@@ -498,6 +385,50 @@ class ReleaseNotesScraper:
                 continue
         
         return None
+
+    def _fetch_date_from_url(self, url: str) -> Optional[datetime]:
+        """Fetch article page to extract date."""
+        try:
+            if self.verbose:
+                print(f"    Fetching date from: {url}", file=sys.stderr)
+            
+            response = self.requests.get(url, timeout=10)
+            if response.status_code != 200:
+                return None
+                
+            soup = self.BeautifulSoup(response.content, 'html.parser')
+            
+            # Developers Blog specific
+            if 'developers.googleblog.com' in url:
+                # Look for date-time class or published-date
+                # Format: MAY 13, 2025
+                for cls in ['date-time', 'published-date']:
+                    elem = soup.find(class_=cls)
+                    if elem:
+                        date_str = elem.get_text(strip=True)
+                        try:
+                            # Handle "MAY 13, 2025" -> "May 13, 2025"
+                            # .title() would make it "May 13, 2025"
+                            return datetime.strptime(date_str.title(), '%B %d, %Y')
+                        except ValueError:
+                            pass
+            
+            # Generic / Cloud Blog
+            # Look for meta tags
+            for meta in soup.find_all('meta'):
+                prop = meta.get('property', '')
+                name = meta.get('name', '')
+                content = meta.get('content')
+                if content and ('published_time' in prop or 'published_time' in name or 'date' in prop or 'date' in name):
+                    try:
+                        # Try parsing ISO format
+                        return datetime.fromisoformat(content.replace('Z', '+00:00'))
+                    except ValueError:
+                        pass
+                            
+            return None
+        except Exception:
+            return None
     
     def _categorize_item(self, element=None, text: str = None) -> str:
         """Categorize a release note item based on its element class or content."""
@@ -615,8 +546,235 @@ class ReleaseNotesScraper:
         if self._is_antigravity_url(self.url):
             return self._scrape_antigravity_js(headers)
         
+        # Blog scraping
+        if self.platform == 'cloud_blog':
+            return self._scrape_cloud_blog(headers)
+        if self.platform == 'developers_blog':
+            return self._scrape_developers_blog(headers)
+        
         # Direct HTML scraping
         return self._scrape_html(self.url, headers)
+    
+    def _scrape_cloud_blog(self, headers: dict) -> List[Dict]:
+        """Scrape Google Cloud Blog."""
+        try:
+            response = self.requests.get(self.url, headers=headers, timeout=30)
+            response.raise_for_status()
+            soup = self.BeautifulSoup(response.content, 'html.parser')
+            
+            releases = []
+            
+            # Method 1: Try to extract from AF_initDataCallback JSON
+            scripts = soup.find_all('script')
+            for script in scripts:
+                if script.string and 'AF_initDataCallback' in script.string:
+                    match = re.search(r'data:(\[.*\])\}\);', script.string, re.DOTALL)
+                    if match:
+                        try:
+                            data = json.loads(match.group(1))
+                            self._extract_articles_from_json(data, releases)
+                        except Exception as e:
+                            if self.verbose:
+                                print(f"  JSON parsing error in Cloud Blog: {e}", file=sys.stderr)
+            
+            # Method 2: Fallback to HTML parsing
+            if not releases:
+                if self.verbose:
+                    print("  Fallback to HTML parsing for Cloud Blog...", file=sys.stderr)
+                
+                # Look for article cards (c-wiz components usually rendered as divs with specific classes)
+                # Based on analysis, class 'u2M0Kb' contains article cards
+                cards = soup.find_all('div', class_='u2M0Kb')
+                for card in cards:
+                    title_elem = card.find('h5')
+                    link_elem = card.find('a', class_='w7DBpd')
+                    
+                    if title_elem and link_elem:
+                        title = title_elem.get_text(strip=True)
+                        url = link_elem.get('href')
+                        if url and url.startswith('/'):
+                            url = 'https://cloud.google.com' + url
+                            
+                        # Date is hard to extract from HTML reliably without JS rendering
+                        # We'll use None or today's date if strict filtering is not needed
+                        # For now, let's skip date filtering for fallback items if date is missing
+                        releases.append({
+                            'date': None,
+                            'date_str': 'Recent',
+                            'items': [{
+                                'text': title,
+                                'category': 'announcement',
+                                'urls': [url]
+                            }],
+                            'url': self.url
+                        })
+            
+            # Filter by date if we have dates
+            filtered = []
+            
+            # Determine if we should be strict about missing dates
+            strict_mode = self.days is not None or self.start_date is not None
+            
+            for release in releases:
+                if release['date']:
+                    if release['date'] >= self.cutoff_date:
+                        if self.end_date is None or release['date'] <= self.end_date:
+                            filtered.append(release)
+                elif not strict_mode:
+                    # Include undated items only if we are not in strict mode
+                    filtered.append(release)
+                elif self.verbose:
+                    print(f"    Skipping undated item (strict mode): {release['items'][0]['text'][:50]}...", file=sys.stderr)
+            
+            return filtered
+            
+        except Exception as e:
+            print(f"Error scraping Cloud Blog: {e}", file=sys.stderr)
+            return []
+
+    def _extract_articles_from_json(self, obj, releases):
+        """Recursively find articles in Cloud Blog JSON structure."""
+        if isinstance(obj, list):
+            # Check if this list looks like an article entry
+            # ["Category", "Title", null, [], null, 5, null, "URL", [1765846800], ...]
+            if len(obj) > 8 and isinstance(obj[1], str) and isinstance(obj[7], str) and isinstance(obj[0], str):
+                if obj[7].startswith('https://cloud.google.com/blog/'):
+                    title = obj[1]
+                    url = obj[7]
+                    timestamp = None
+                    if isinstance(obj[8], list) and len(obj[8]) > 0:
+                        timestamp = obj[8][0]
+                    
+                    date = None
+                    date_str = 'Recent'
+                    if timestamp:
+                        try:
+                            # timestamp is in seconds
+                            date = datetime.fromtimestamp(timestamp)
+                            date_str = date.strftime('%B %d, %Y')
+                        except ValueError:
+                            pass
+                    
+                    releases.append({
+                        'date': date,
+                        'date_str': date_str,
+                        'items': [{
+                            'text': title,
+                            'category': 'announcement',
+                            'urls': [url]
+                        }],
+                        'url': self.url
+                    })
+            
+            for item in obj:
+                self._extract_articles_from_json(item, releases)
+
+    def _scrape_developers_blog(self, headers: dict) -> List[Dict]:
+        """Scrape Google Developers Blog."""
+        try:
+            response = self.requests.get(self.url, headers=headers, timeout=30)
+            response.raise_for_status()
+            soup = self.BeautifulSoup(response.content, 'html.parser')
+            
+            releases = []
+            
+            # Look for post-item (Latest blogs list) - these have dates
+            posts = soup.find_all('div', class_='post-item')
+            for post in posts:
+                link_elem = post.find('a', class_='post-item__link')
+                date_elem = post.find('div', class_='post-item__top')
+                
+                if link_elem:
+                    title_elem = link_elem.find(class_='glue-headline')
+                    if title_elem:
+                        title = title_elem.get_text(strip=True)
+                        link = link_elem.get('href')
+                        if link.startswith('/'):
+                            link = 'https://developers.googleblog.com' + link
+                        
+                        date = None
+                        date_str = 'Recent'
+                        if date_elem:
+                            raw_date = date_elem.get_text(strip=True)
+                            try:
+                                # Format: DEC. 16, 2025
+                                clean_date = raw_date.replace('.', '')
+                                date = datetime.strptime(clean_date, '%b %d, %Y')
+                                date_str = date.strftime('%B %d, %Y')
+                            except ValueError:
+                                date_str = raw_date
+                        
+                        releases.append({
+                            'date': date,
+                            'date_str': date_str,
+                            'items': [{
+                                'text': title,
+                                'category': 'announcement',
+                                'urls': [link]
+                            }],
+                            'url': self.url
+                        })
+            
+            # Look for glue-card items (Carousel/Featured) - usually no date visible on home
+            cards = soup.find_all('a', class_='glue-card')
+            for card in cards:
+                title_elem = card.find(class_='post-title')
+                if not title_elem:
+                    # Try finding headline if post-title not found
+                    title_elem = card.find(class_='glue-headline')
+                
+                if title_elem:
+                    title = title_elem.get_text(strip=True)
+                    link = card.get('href')
+                    if link.startswith('/'):
+                        link = 'https://developers.googleblog.com' + link
+                    
+                    # Check for duplicates
+                    is_duplicate = False
+                    for r in releases:
+                        if r['items'][0]['text'] == title:
+                            is_duplicate = True
+                            break
+                    
+                    if not is_duplicate:
+                        # Fetch date from article page since it's not on the main page for carousel items
+                        date = self._fetch_date_from_url(link)
+                        date_str = date.strftime('%B %d, %Y') if date else 'Featured'
+                        
+                        releases.append({
+                            'date': date,
+                            'date_str': date_str,
+                            'items': [{
+                                'text': title,
+                                'category': 'announcement',
+                                'urls': [link]
+                            }],
+                            'url': self.url
+                        })
+
+            # Filter by date
+            filtered = []
+            
+            # Determine if we should be strict about missing dates
+            strict_mode = self.days is not None or self.start_date is not None
+            
+            for release in releases:
+                if release['date']:
+                    if release['date'] >= self.cutoff_date:
+                        if self.end_date is None or release['date'] <= self.end_date:
+                            filtered.append(release)
+                elif not strict_mode:
+                    # Include undated items only if we are not in strict mode
+                    # This prevents "Featured" items from showing up in "-d 1" queries
+                    filtered.append(release)
+                elif self.verbose:
+                    print(f"    Skipping undated item (strict mode): {release['items'][0]['text'][:50]}...", file=sys.stderr)
+            
+            return filtered
+            
+        except Exception as e:
+            print(f"Error scraping Developers Blog: {e}", file=sys.stderr)
+            return []
     
     def _get_fallback_url(self) -> Optional[str]:
         """Get the HTML fallback URL for the current service."""
@@ -1606,6 +1764,22 @@ class ReleaseNotesScraper:
                 # Format category badge
                 badge = f"[{category}]"
                 
+                # Add source/service name for blog items if we're in blog mode
+                if hasattr(self, 'group_name') and self.group_name == 'Google Blogs' and service:
+                    display_service = service
+                    # Map internal service names to friendlier names
+                    service_map = {
+                        'app-dev': 'App Dev',
+                        'app-mod': 'App Mod',
+                        'infra': 'Infra',
+                        'containers': 'Containers',
+                        'ai-ml': 'AI/ML',
+                        'dev-blog': 'Dev Blog',
+                    }
+                    if service in service_map:
+                        display_service = service_map[service]
+                    badge = f"{badge} [{display_service}]"
+                
                 # Word wrap long text
                 max_width = 70
                 prefix = f"    {icon} {badge} "
@@ -2060,6 +2234,9 @@ Examples:
   %(prog)s -g security -c breaking  # Security services, breaking changes only
   %(prog)s -g databases -o html -f db.html
   
+  # Scrape blogs
+  %(prog)s --blogs                  # Scrape all configured Google blogs
+  
   # List available services and groups
   %(prog)s --list-services          # Shows all services with their group
   %(prog)s --list-groups            # Shows all groups: ai, apps, compute,
@@ -2101,6 +2278,11 @@ Output formats:
         '--list-groups',
         action='store_true',
         help='List all available service groups'
+    )
+    source_group.add_argument(
+        '--blogs',
+        action='store_true',
+        help='Scrape official Google Cloud and Developers blogs'
     )
     
     # Date filtering options
@@ -2177,8 +2359,11 @@ Output formats:
     elif args.url:
         urls = [args.url]
         service_names = ['custom']
+    elif args.blogs:
+        urls = list(BLOG_URLS.values())
+        service_names = list(BLOG_URLS.keys())
     else:
-        parser.error("Either --service, --group, or --url is required (use --list-services or --list-groups to see options)")
+        parser.error("Either --service, --group, --url, or --blogs is required")
     
     # Parse date arguments
     start_date = None
@@ -2217,7 +2402,7 @@ Output formats:
     
     if args.verbose:
         if len(urls) > 1:
-            print(f"Scraping {len(urls)} services in group '{args.group}':", file=sys.stderr)
+            print(f"Scraping {len(urls)} services in group '{args.group if args.group else 'blogs'}':", file=sys.stderr)
             for name in service_names:
                 print(f"  - {name}", file=sys.stderr)
         else:
@@ -2269,6 +2454,9 @@ Output formats:
     if args.group:
         format_scraper.group_name = args.group
         format_scraper.service_names = service_names
+    elif args.blogs:
+        format_scraper.group_name = 'Google Blogs'
+        format_scraper.service_names = service_names
     else:
         format_scraper.group_name = None
         format_scraper.service_names = service_names
@@ -2291,4 +2479,3 @@ Output formats:
 
 if __name__ == '__main__':
     main()
-
