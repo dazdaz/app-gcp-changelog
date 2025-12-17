@@ -209,6 +209,9 @@ BLOG_URLS = {
     'containers': 'https://cloud.google.com/blog/products/containers-kubernetes',
     'ai-ml': 'https://cloud.google.com/blog/products/ai-machine-learning',
     'dev-blog': 'https://developers.googleblog.com/',
+    'medium-ml': 'https://medium.com/feed/google-cloud/tagged/machine-learning',
+    'medium-k8s': 'https://medium.com/feed/google-cloud/tagged/kubernetes',
+    'medium-appdev': 'https://medium.com/feed/google-cloud/tagged/gcp-app-dev',
 }
 
 # HTML fallback URLs for services without XML feeds
@@ -346,6 +349,10 @@ class ReleaseNotesScraper:
             return 'cloud_blog'
         if 'developers.googleblog.com' in url:
             return 'developers_blog'
+        if 'medium.com/feed/' in url:
+            return 'medium_feed'  # RSS feed - use XML parser
+        if 'medium.com/google-cloud' in url:
+            return 'medium_blog'  # HTML - requires Selenium
         if 'cloud.google.com' in url or 'developers.google.com' in url:
             return 'google_cloud'
         if 'firebase.google.com' in url:
@@ -359,6 +366,9 @@ class ReleaseNotesScraper:
         # AntiGravity uses embedded JS data, not XML
         if 'antigravity.google' in url:
             return False
+        # Medium RSS feeds use /feed/ path
+        if 'medium.com/feed/' in url:
+            return True
         return url.endswith('.xml') or url.endswith('.atom') or '/feeds/' in url
     
     def _is_antigravity_url(self, url: str) -> bool:
@@ -551,6 +561,8 @@ class ReleaseNotesScraper:
             return self._scrape_cloud_blog(headers)
         if self.platform == 'developers_blog':
             return self._scrape_developers_blog(headers)
+        if self.platform == 'medium_blog':
+            return self._scrape_medium_blog(headers)
         
         # Direct HTML scraping
         return self._scrape_html(self.url, headers)
@@ -668,6 +680,271 @@ class ReleaseNotesScraper:
             
             for item in obj:
                 self._extract_articles_from_json(item, releases)
+
+    def _parse_relative_date(self, relative_str: str) -> Optional[datetime]:
+        """Parse relative date strings like '6d ago', '2h ago', 'Dec 10', etc."""
+        relative_str = relative_str.strip().lower()
+        now = datetime.now()
+        
+        # Handle "X ago" patterns
+        ago_match = re.match(r'(\d+)\s*(d|h|m|min|hr|day|hour|minute|week|w)s?\s*ago', relative_str, re.IGNORECASE)
+        if ago_match:
+            value = int(ago_match.group(1))
+            unit = ago_match.group(2).lower()
+            
+            if unit in ('d', 'day'):
+                return now - timedelta(days=value)
+            elif unit in ('h', 'hr', 'hour'):
+                return now - timedelta(hours=value)
+            elif unit in ('m', 'min', 'minute'):
+                return now - timedelta(minutes=value)
+            elif unit in ('w', 'week'):
+                return now - timedelta(weeks=value)
+        
+        # Handle "just now" or "now"
+        if 'just now' in relative_str or relative_str == 'now':
+            return now
+        
+        # Handle "yesterday"
+        if 'yesterday' in relative_str:
+            return now - timedelta(days=1)
+        
+        # Handle absolute dates like "Dec 10" or "Dec 10, 2024"
+        # Try formats with year first
+        date_formats = [
+            '%b %d, %Y',      # Dec 10, 2024
+            '%B %d, %Y',      # December 10, 2024
+            '%b %d %Y',       # Dec 10 2024
+            '%B %d %Y',       # December 10 2024
+        ]
+        
+        for fmt in date_formats:
+            try:
+                return datetime.strptime(relative_str, fmt)
+            except ValueError:
+                continue
+        
+        # Handle dates without year (assume current year, or previous year if date is in future)
+        date_formats_no_year = [
+            '%b %d',          # Dec 10
+            '%B %d',          # December 10
+        ]
+        
+        for fmt in date_formats_no_year:
+            try:
+                parsed = datetime.strptime(relative_str, fmt)
+                # Add current year
+                parsed = parsed.replace(year=now.year)
+                # If the date is in the future, it's probably from last year
+                if parsed > now:
+                    parsed = parsed.replace(year=now.year - 1)
+                return parsed
+            except ValueError:
+                continue
+        
+        return None
+
+    def _scrape_medium_blog(self, headers: dict) -> List[Dict]:
+        """Scrape Medium Google Cloud blog posts using Selenium for JS rendering."""
+        try:
+            # Medium requires JavaScript rendering - use Selenium
+            try:
+                from selenium import webdriver
+                from selenium.webdriver.chrome.options import Options
+                from selenium.webdriver.chrome.service import Service
+                from selenium.webdriver.common.by import By
+                from selenium.webdriver.support.ui import WebDriverWait
+                from selenium.webdriver.support import expected_conditions as EC
+            except ImportError:
+                print("Error: Selenium is required for Medium blog scraping.", file=sys.stderr)
+                print("Install it with: uv pip install selenium", file=sys.stderr)
+                return []
+            
+            if self.verbose:
+                print(f"  Using Selenium for Medium blog: {self.url}", file=sys.stderr)
+            
+            # Set up headless Chrome
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--window-size=1920,1080")
+            chrome_options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            
+            driver = webdriver.Chrome(options=chrome_options)
+            
+            try:
+                driver.get(self.url)
+                
+                # Wait for content to load
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "article"))
+                )
+                
+                # Give extra time for dynamic content
+                import time
+                time.sleep(2)
+                
+                # Get page source after JS rendering
+                page_source = driver.page_source
+            finally:
+                driver.quit()
+            
+            soup = self.BeautifulSoup(page_source, 'html.parser')
+            
+            releases = []
+            
+            if self.verbose:
+                print(f"  Scraping Medium blog: {self.url}", file=sys.stderr)
+            
+            # Medium articles are typically in article tags or divs with specific data attributes
+            # Look for article cards - Medium uses various structures
+            
+            # Method 1: Look for article elements
+            articles = soup.find_all('article')
+            
+            for article in articles:
+                # Find title - usually in h2 or h3 within the article
+                title_elem = article.find(['h2', 'h3', 'h1'])
+                if not title_elem:
+                    continue
+                
+                title = title_elem.get_text(strip=True)
+                if not title or len(title) < 10:
+                    continue
+                
+                # Find link
+                link_elem = article.find('a', href=True)
+                link = ''
+                if link_elem:
+                    href = link_elem.get('href', '')
+                    if href.startswith('/'):
+                        link = 'https://medium.com' + href
+                    elif href.startswith('http'):
+                        link = href
+                    else:
+                        link = 'https://medium.com/google-cloud/' + href
+                
+                # Find date - Medium shows relative dates like "6d ago", "Dec 10", etc.
+                date = None
+                date_str = 'Recent'
+                
+                # Look for time elements or spans with date-like text
+                time_elem = article.find('time')
+                if time_elem:
+                    date_text = time_elem.get('datetime') or time_elem.get_text(strip=True)
+                    if date_text:
+                        # Try ISO format first
+                        try:
+                            date = datetime.fromisoformat(date_text.replace('Z', '+00:00'))
+                            if date.tzinfo:
+                                date = date.replace(tzinfo=None)
+                            date_str = date.strftime('%B %d, %Y')
+                        except ValueError:
+                            # Try relative date parsing
+                            date = self._parse_relative_date(date_text)
+                            if date:
+                                date_str = date.strftime('%B %d, %Y')
+                
+                # If no time element, look for text patterns in spans
+                if not date:
+                    for span in article.find_all('span'):
+                        span_text = span.get_text(strip=True)
+                        # Look for patterns like "6d ago", "Dec 10", "2h ago"
+                        if re.match(r'^\d+[dhm]\s*ago$', span_text, re.IGNORECASE) or \
+                           re.match(r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d+', span_text, re.IGNORECASE) or \
+                           'ago' in span_text.lower():
+                            date = self._parse_relative_date(span_text)
+                            if date:
+                                date_str = date.strftime('%B %d, %Y')
+                                break
+                
+                # If still no date, look in the article text for date patterns
+                if not date:
+                    article_text = article.get_text()
+                    # Look for relative date patterns
+                    relative_match = re.search(r'(\d+[dhm]\s*ago|\d+\s*(?:day|hour|minute|week)s?\s*ago)', article_text, re.IGNORECASE)
+                    if relative_match:
+                        date = self._parse_relative_date(relative_match.group(1))
+                        if date:
+                            date_str = date.strftime('%B %d, %Y')
+                    else:
+                        # Look for date like "Dec 10"
+                        date_match = re.search(r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?)', article_text, re.IGNORECASE)
+                        if date_match:
+                            date = self._parse_relative_date(date_match.group(1))
+                            if date:
+                                date_str = date.strftime('%B %d, %Y')
+                
+                releases.append({
+                    'date': date,
+                    'date_str': date_str,
+                    'items': [{
+                        'text': title,
+                        'category': 'announcement',
+                        'urls': [link] if link else []
+                    }],
+                    'url': self.url
+                })
+            
+            # Method 2: If no articles found, try looking for div-based cards
+            if not releases:
+                if self.verbose:
+                    print("  Trying alternative Medium parsing...", file=sys.stderr)
+                
+                # Look for links that look like article links
+                for link in soup.find_all('a', href=True):
+                    href = link.get('href', '')
+                    # Medium article links typically have a specific pattern
+                    if '/google-cloud/' in href and not href.endswith('/all') and '?' not in href:
+                        title_elem = link.find(['h2', 'h3', 'h1', 'p'])
+                        if title_elem:
+                            title = title_elem.get_text(strip=True)
+                            if title and len(title) > 15:
+                                full_url = href if href.startswith('http') else 'https://medium.com' + href
+                                
+                                # Check for duplicates
+                                is_duplicate = any(
+                                    r['items'][0]['text'] == title for r in releases
+                                )
+                                if not is_duplicate:
+                                    releases.append({
+                                        'date': None,
+                                        'date_str': 'Recent',
+                                        'items': [{
+                                            'text': title,
+                                            'category': 'announcement',
+                                            'urls': [full_url]
+                                        }],
+                                        'url': self.url
+                                    })
+            
+            if self.verbose:
+                print(f"  Found {len(releases)} articles from Medium", file=sys.stderr)
+            
+            # Filter by date
+            filtered = []
+            strict_mode = self.days is not None or self.start_date is not None
+            
+            for release in releases:
+                if release['date']:
+                    if release['date'] >= self.cutoff_date:
+                        if self.end_date is None or release['date'] <= self.end_date:
+                            filtered.append(release)
+                elif not strict_mode:
+                    filtered.append(release)
+                elif self.verbose:
+                    print(f"    Skipping undated item (strict mode): {release['items'][0]['text'][:50]}...", file=sys.stderr)
+            
+            return filtered
+            
+        except Exception as e:
+            print(f"Error scraping Medium blog: {e}", file=sys.stderr)
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
+            return []
 
     def _scrape_developers_blog(self, headers: dict) -> List[Dict]:
         """Scrape Google Developers Blog."""
@@ -904,15 +1181,17 @@ class ReleaseNotesScraper:
                 title = title_elem.text or ''
             
             # Get published/updated date
-            date_elem = entry.find('atom:published', namespaces)
+            # Priority: pubDate (RSS) > published (Atom) > updated (Atom)
+            # pubDate and published are publication dates, updated is last-modified
+            date_elem = entry.find('pubDate')  # RSS format - check first
+            if date_elem is None:
+                date_elem = entry.find('atom:published', namespaces)
             if date_elem is None:
                 date_elem = entry.find('published')
             if date_elem is None:
                 date_elem = entry.find('atom:updated', namespaces)
             if date_elem is None:
                 date_elem = entry.find('updated')
-            if date_elem is None:
-                date_elem = entry.find('pubDate')  # RSS format
             
             parsed_date = None
             date_str = ''
@@ -945,7 +1224,7 @@ class ReleaseNotesScraper:
             
             if parsed_date:
                 # Parse HTML content to extract items
-                items = self._parse_xml_content(content_text, title)
+                items = self._parse_xml_content(content_text, title, link)
                 
                 if items:
                     releases.append({
@@ -1011,7 +1290,7 @@ class ReleaseNotesScraper:
         
         return parsed_date
     
-    def _parse_xml_content(self, content: str, title: str = '') -> List[Dict]:
+    def _parse_xml_content(self, content: str, title: str = '', entry_link: str = '') -> List[Dict]:
         """Parse HTML content from XML feed entry."""
         items = []
         
@@ -1020,7 +1299,7 @@ class ReleaseNotesScraper:
                 items.append({
                     'text': title,
                     'category': self._categorize_item(text=title),
-                    'urls': []
+                    'urls': [entry_link] if entry_link else []
                 })
             return items
         
@@ -1072,11 +1351,20 @@ class ReleaseNotesScraper:
         if not items:
             text = soup.get_text(strip=True)
             if text and len(text) > 10:
+                urls = [a.get('href') for a in soup.find_all('a') if a.get('href')]
+                # Add entry link if no URLs were found in content
+                if not urls and entry_link:
+                    urls = [entry_link]
                 items.append({
                     'text': content,
                     'category': self._categorize_item(text=text),
-                    'urls': [a.get('href') for a in soup.find_all('a') if a.get('href')]
+                    'urls': urls
                 })
+        
+        # Ensure items have the entry link if they don't have any URLs
+        for item in items:
+            if not item.get('urls') and entry_link:
+                item['urls'] = [entry_link]
         
         return items
     
