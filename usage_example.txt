@@ -1,21 +1,37 @@
+# Basic usage with service name (recommended)
+./changelog.py -s cloud-run
 
-```bash
-./gcpwatch.py -m 12 -u https://cloud.google.com/run/docs/release-notes -o json -f my_cloudrun_release_notes.json
-./gcpwatch.py -m 12 -u https://cloud.google.com/run/docs/release-notes -o html -f my_cloudrun_release_notes.html
-./gcpwatch.py -m 12 -u https://cloud.google.com/run/docs/release-notes -o text -f my_cloudrun_release_notes.txt
+# Filter by time range
+./changelog.py -s cloud-run -d 7              # Last 7 days
+./changelog.py -s cloud-run -m 3              # Last 3 months
+./changelog.py -s cloud-run --start-date 2024-01-01 --end-date 2024-06-30
 
-./gcpwatch.py -m 12 -u https://cloud.google.com/kubernetes-engine/docs/release-notes -o json -f my_gke_release_notes.json
-./gcpwatch.py -m 12 -u https://cloud.google.com/kubernetes-engine/docs/release-notes -o html -f my_gke_release_notes.html
-./gcpwatch.py -m 12 -u https://cloud.google.com/kubernetes-engine/docs/release-notes -o text -f my_gke_release_notes.txt
+# Filter by category
+./changelog.py -s cloud-run -c ga -c public-preview
+./changelog.py -s gke -c breaking -c deprecated
 
-./gcpwatch.py -m 12 -u https://cloud.google.com/release-notes -o html -f my_gcp_release_notes.html
+# Service Groups (query multiple services)
+./changelog.py -g ai -m 1                     # All AI services, last month
+./changelog.py -g security -d 30              # All Security services, last 30 days
 
-./gcpwatch.py -m 12  -u https://cloud.google.com/kubernetes-engine/docs/release-notes --mask "Change" -o html -f my_gke_release_notes.html
+# Custom URL
+./changelog.py -u https://cloud.google.com/run/docs/release-notes
 
-./gcpwatch.py -m 12 -u https://cloud.google.com/kubernetes-engine/docs/release-notes -o json -f my_gke_release_notes.json
-```
+# Output formats
+./changelog.py -s cloud-run -o json -f cloud_run.json
+./changelog.py -s cloud-run -o markdown -f cloud_run.md
+./changelog.py -s cloud-run -o html -f cloud_run.html
 
-```bash
+# Advanced Examples
+
+# 1. Get GKE release notes for the last year in JSON
+./changelog.py -s gke -m 12 -o json -f gke_notes.json
+
+# 2. Get all "breaking" changes across all Compute services for the last 6 months
+./changelog.py -g compute -m 6 -c breaking -o html -f compute_breaking.html
+
+# 3. Parse JSON output with jq to extract specific information
+# Extract date, category and text for all "public-preview" items:
 jq -r '.releases[] as $release | $release.items[] | select(.category == "public-preview") |
   "--------------------------------------------------------------------------------",
   "Release Date:   \($release.date_str)",
@@ -24,15 +40,4 @@ jq -r '.releases[] as $release | $release.items[] | select(.category == "public-
   (.text | sub("\\s+"; " "; "g") | sub("For more information.*"; "")),
   "URLs:",
   (.urls | .[]? | "  - " + .),
-  ""' my_cloudrun_release_notes.json
-
-jq -r '.releases[] as $release | $release.items[] | select(.category == "public-preview") |
-  "--------------------------------------------------------------------------------",
-  "Release Date:   \($release.date_str)",
-  "Category:       \(.category)",
-  "Text:",
-  (.text | sub("\\s+"; " "; "g") | sub("For more information.*"; "")),
-  "URLs:",
-  (.urls | .[]? | "  - " + .),
-  ""' my_gke_release_notes.json
-```
+  ""' gke_notes.json

@@ -1,5 +1,5 @@
 
-# gcp-changelog
+# changelog.py
 
 A command-line tool to track and monitor Google Cloud Platform release notes.
 
@@ -25,28 +25,28 @@ This is a **release notes scraper** that automatically downloads and organizes r
 uv venv && source .venv/bin/activate && uv pip install -r requirements.txt
 
 # Get Cloud Run release notes (last 12 months)
-./gcp-changelog.py -s cloud-run
+./changelog.py -s cloud-run
 
 # Get release notes from last 7 days
-./gcp-changelog.py -s cloud-run -d 7
+./changelog.py -s cloud-run -d 7
 
 # Get GKE notes for last 6 months as HTML
-./gcp-changelog.py -s gke -m 6 -o html -f gke_notes.html
+./changelog.py -s gke -m 6 -o html -f gke_notes.html
 
 # Query all AI services at once
-./gcp-changelog.py -g ai -m 3
+./changelog.py -g ai -m 3
 
 # List all available services and groups
-./gcp-changelog.py --list-services
-./gcp-changelog.py --list-groups
+./changelog.py --list-services
+./changelog.py --list-groups
 ```
 
 ## Command Line Reference
 
 ```
-usage: gcp-changelog.py [-h] [-s SERVICE | -g GROUP | -u URL | --list-services | --list-groups]
-                        [-d DAYS] [-m MONTHS] [--start-date START_DATE] [--end-date END_DATE]
-                        [-c CATEGORY] [-o {text,json,markdown,html}] [-f FILE] [-v]
+usage: changelog.py [-h] [-s SERVICE | -g GROUP | -u URL | --list-services | --list-groups]
+                    [-d DAYS] [-m MONTHS] [--start-date START_DATE] [--end-date END_DATE]
+                    [-c CATEGORY] [-o {text,json,markdown,html}] [-f FILE] [-v]
 
 Scrape release notes from documentation pages or XML feeds
 
@@ -79,19 +79,19 @@ date filtering:
 
 ```bash
 # Cloud Run release notes
-./gcp-changelog.py -s cloud-run
+./changelog.py -s cloud-run
 
 # GKE release notes for last 6 months
-./gcp-changelog.py -s gke -m 6
+./changelog.py -s gke -m 6
 
 # Release notes from last 30 days
-./gcp-changelog.py -s bigquery -d 30
+./changelog.py -s bigquery -d 30
 
 # BigQuery notes as JSON
-./gcp-changelog.py -s bigquery -o json -f bigquery.json
+./changelog.py -s bigquery -o json -f bigquery.json
 
 # Vertex AI notes as HTML
-./gcp-changelog.py -s vertex-ai -o html -f vertex.html
+./changelog.py -s vertex-ai -o html -f vertex.html
 ```
 
 ### Service Groups
@@ -100,19 +100,19 @@ Query multiple services at once by domain:
 
 ```bash
 # All AI/ML service updates
-./gcp-changelog.py -g ai -m 3
+./changelog.py -g ai -m 3
 
 # All security service updates
-./gcp-changelog.py -g security -c breaking -c deprecated
+./changelog.py -g security -c breaking -c deprecated
 
 # All GKE channel updates from last 14 days
-./gcp-changelog.py -g gke -d 14
+./changelog.py -g gke -d 14
 
 # All database updates as HTML
-./gcp-changelog.py -g databases -o html -f db_updates.html
+./changelog.py -g databases -o html -f db_updates.html
 
 # List available groups
-./gcp-changelog.py --list-groups
+./changelog.py --list-groups
 ```
 
 Available groups:
@@ -135,32 +135,32 @@ Available groups:
 
 ```bash
 # Last 7 days
-./gcp-changelog.py -s cloud-run -d 7
+./changelog.py -s cloud-run -d 7
 
 # Last 30 days
-./gcp-changelog.py -s bigquery -d 30
+./changelog.py -s bigquery -d 30
 
 # Notes from January to June 2024
-./gcp-changelog.py -s cloud-run --start-date 2024-01-01 --end-date 2024-06-30
+./changelog.py -s cloud-run --start-date 2024-01-01 --end-date 2024-06-30
 
 # Notes since June 2024
-./gcp-changelog.py -s bigquery --start-date 2024-06-01
+./changelog.py -s bigquery --start-date 2024-06-01
 
 # Last 3 months
-./gcp-changelog.py -s gke -m 3
+./changelog.py -s gke -m 3
 ```
 
 ### Category Filtering
 
 ```bash
 # Only GA and Preview features
-./gcp-changelog.py -s cloud-run -c ga -c public-preview
+./changelog.py -s cloud-run -c ga -c public-preview
 
 # Only breaking changes and deprecations
-./gcp-changelog.py -s gke -c breaking -c deprecated
+./changelog.py -s gke -c breaking -c deprecated
 
 # Security updates only
-./gcp-changelog.py -s compute-engine -c security
+./changelog.py -s compute-engine -c security
 ```
 
 Available categories: `ga`, `public-preview`, `breaking`, `security`, `deprecated`, `fixed`, `issue`, `change`, `announcement`, `libraries`, `update`
@@ -169,26 +169,26 @@ Available categories: `ga`, `public-preview`, `breaking`, `security`, `deprecate
 
 ```bash
 # Custom XML feed URL
-./gcp-changelog.py -u https://cloud.google.com/feeds/cloud-run-release-notes.xml
+./changelog.py -u https://cloud.google.com/feeds/cloud-run-release-notes.xml
 
 # HTML release notes page
-./gcp-changelog.py -u https://cloud.google.com/run/docs/release-notes
+./changelog.py -u https://cloud.google.com/run/docs/release-notes
 ```
 
 ### Output Formats
 
 ```bash
 # Plain text (default)
-./gcp-changelog.py -s cloud-run
+./changelog.py -s cloud-run
 
 # Markdown (great for docs)
-./gcp-changelog.py -o markdown -s cloud-run -f notes.md
+./changelog.py -o markdown -s cloud-run -f notes.md
 
 # JSON (for automation)
-./gcp-changelog.py -s cloud-run -o json -f notes.json
+./changelog.py -s cloud-run -o json -f notes.json
 
 # HTML (styled webpage)
-./gcp-changelog.py -s cloud-run -o html -f notes.html
+./changelog.py -s cloud-run -o html -f notes.html
 ```
 
 ## What It Categorizes

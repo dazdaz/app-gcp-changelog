@@ -16,8 +16,9 @@ import xml.etree.ElementTree as ET
 # GCP Service Groups (domains)
 SERVICE_GROUPS = {
     'apps': [
-        'apphub', 'api-gateway', 'apigee', 'cloud-build', 'cloud-functions',
-        'cloud-run', 'cloud-tasks', 'cloud-trace', 'eventarc', 'workflows'
+        'application-design-center', 'apphub', 'api-gateway', 'apigee', 'cloud-build', 'cloud-deploy',
+        'cloud-functions', 'cloud-run', 'cloud-sdk', 'cloud-tasks', 'cloud-trace', 'deployment-manager',
+        'endpoints', 'eventarc', 'source-repositories', 'workflows'
     ],
     'databases': [
         'alloydb', 'bigquery', 'data-fusion', 'firestore', 'spanner', 'cloud-sql',
@@ -40,7 +41,8 @@ SERVICE_GROUPS = {
     ],
     'compute': [
         'bare-metal', 'cloud-hub', 'cloud-tpu', 'compute-engine', 'confidential-space',
-        'distributed-cloud-edge', 'anthos-bare-metal', 'anthos-vmware', 'vmware-engine'
+        'distributed-cloud-edge', 'anthos-bare-metal', 'anthos-vmware', 'vmware-engine',
+        'workstations'
     ],
     'gke': [
         'gke', 'gke-rapid', 'gke-regular', 'gke-stable', 'gke-extended', 'gke-nochannel'
@@ -50,7 +52,7 @@ SERVICE_GROUPS = {
         'cloud-scheduler', 'config-connector', 'resource-manager'
     ],
     'ai': [
-        'ai-app-builder', 'antigravity', 'dialogflow', 'document-ai', 'gemini-code-assist',
+        'ai-app-builder', 'antigravity', 'dialogflow', 'document-ai', 'gemini-cli', 'gemini-code-assist',
         'speech-to-text', 'talent-solution', 'text-to-speech', 'translation',
         'vertex-ai', 'video-intelligence'
     ],
@@ -69,16 +71,23 @@ SERVICE_GROUPS = {
 # GCP Service XML Feed URLs
 SERVICE_FEEDS = {
     # Applications & Development
+    'application-design-center': 'https://cloud.google.com/application-design-center/docs/release-notes',
     'apphub': 'https://cloud.google.com/feeds/apphub-release-notes.xml',
     'api-gateway': 'https://cloud.google.com/feeds/api-gateway-release-notes.xml',
     'apigee': 'https://cloud.google.com/feeds/apigee-release-notes.xml',
     'cloud-build': 'https://cloud.google.com/feeds/cloud-build-release-notes.xml',
+    'cloud-deploy': 'https://cloud.google.com/feeds/deploy-release-notes.xml',
     'cloud-functions': 'https://cloud.google.com/feeds/cloud-functions-release-notes.xml',
     'cloud-run': 'https://cloud.google.com/feeds/cloud-run-release-notes.xml',
+    'cloud-sdk': 'https://cloud.google.com/sdk/docs/release-notes',
     'cloud-tasks': 'https://cloud.google.com/feeds/cloud-tasks-release-notes.xml',
     'cloud-trace': 'https://cloud.google.com/feeds/cloud-trace-release-notes.xml',
+    'deployment-manager': 'https://cloud.google.com/feeds/deployment-manager-release-notes.xml',
+    'endpoints': 'https://cloud.google.com/feeds/endpoints-release-notes.xml',
     'eventarc': 'https://cloud.google.com/feeds/eventarc-release-notes.xml',
+    'source-repositories': 'https://cloud.google.com/feeds/source-repositories-release-notes.xml',
     'workflows': 'https://cloud.google.com/feeds/workflows-release-notes.xml',
+    'workstations': 'https://cloud.google.com/feeds/workstations-release-notes.xml',
     
     # Databases & Data Analytics
     'alloydb': 'https://cloud.google.com/feeds/alloydb-release-notes.xml',
@@ -161,6 +170,7 @@ SERVICE_FEEDS = {
     'antigravity': 'https://antigravity.google/changelog',  # No XML feed, uses HTML
     'dialogflow': 'https://cloud.google.com/feeds/dialogflow-release-notes.xml',
     'document-ai': 'https://cloud.google.com/feeds/document-ai-release-notes.xml',
+    'gemini-cli': 'https://github.com/google-gemini/gemini-cli/releases.atom',
     'gemini-code-assist': 'https://cloud.google.com/feeds/gemini-code-assist-release-notes.xml',
     'speech-to-text': 'https://cloud.google.com/feeds/speech-to-text-release-notes.xml',
     'talent-solution': 'https://cloud.google.com/feeds/talent-solution-release-notes.xml',
@@ -195,16 +205,23 @@ SERVICE_FEEDS = {
 # HTML fallback URLs for services where XML feeds may not be available
 SERVICE_HTML_FALLBACKS = {
     # Applications & Development
+    'application-design-center': 'https://cloud.google.com/application-design-center/docs/release-notes',
     'apphub': 'https://cloud.google.com/app-hub/docs/release-notes',
     'api-gateway': 'https://cloud.google.com/api-gateway/docs/release-notes',
     'apigee': 'https://cloud.google.com/apigee/docs/release-notes',
     'cloud-build': 'https://cloud.google.com/build/docs/release-notes',
+    'cloud-deploy': 'https://cloud.google.com/deploy/docs/release-notes',
     'cloud-functions': 'https://cloud.google.com/functions/docs/release-notes',
     'cloud-run': 'https://cloud.google.com/run/docs/release-notes',
+    'cloud-sdk': 'https://cloud.google.com/sdk/docs/release-notes',
     'cloud-tasks': 'https://cloud.google.com/tasks/docs/release-notes',
     'cloud-trace': 'https://cloud.google.com/trace/docs/release-notes',
+    'deployment-manager': 'https://cloud.google.com/deployment-manager/docs/release-notes',
+    'endpoints': 'https://cloud.google.com/endpoints/docs/release-notes',
     'eventarc': 'https://cloud.google.com/eventarc/docs/release-notes',
+    'source-repositories': 'https://cloud.google.com/source-repositories/docs/release-notes',
     'workflows': 'https://cloud.google.com/workflows/docs/release-notes',
+    'workstations': 'https://cloud.google.com/workstations/docs/release-notes',
     
     # Databases & Data Analytics
     'alloydb': 'https://cloud.google.com/alloydb/docs/release-notes',
@@ -287,6 +304,7 @@ SERVICE_HTML_FALLBACKS = {
     'antigravity': 'https://antigravity.google/changelog',
     'dialogflow': 'https://cloud.google.com/dialogflow/docs/release-notes',
     'document-ai': 'https://cloud.google.com/document-ai/docs/release-notes',
+    'gemini-cli': 'https://github.com/google-gemini/gemini-cli/releases',
     'gemini-code-assist': 'https://cloud.google.com/gemini/docs/codeassist/release-notes',
     'speech-to-text': 'https://cloud.google.com/speech-to-text/docs/release-notes',
     'talent-solution': 'https://cloud.google.com/talent-solution/docs/release-notes',
@@ -454,7 +472,7 @@ class ReleaseNotesScraper:
         # AntiGravity uses embedded JS data, not XML
         if 'antigravity.google' in url:
             return False
-        return url.endswith('.xml') or '/feeds/' in url
+        return url.endswith('.xml') or url.endswith('.atom') or '/feeds/' in url
     
     def _is_antigravity_url(self, url: str) -> bool:
         """Check if the URL is AntiGravity changelog."""
@@ -1337,7 +1355,11 @@ class ReleaseNotesScraper:
                             items = []
                             sibling = header.find_next_sibling()
                             
-                            while sibling and sibling.name not in selectors['date_headers']:
+                            while sibling and sibling.name != header.name:
+                                # Stop if we hit a higher-level header (e.g. h1 when processing h2)
+                                if sibling.name in selectors['date_headers'] and sibling.name < header.name:
+                                    break
+                                
                                 # Check for specific release divs
                                 div_classes = sibling.get('class', [])
                                 if any(cls in ['release-feature', 'release-changed', 'release-announcement', 'release-breaking', 'release-issue'] for cls in div_classes):
