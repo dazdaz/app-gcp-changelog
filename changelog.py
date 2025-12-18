@@ -214,9 +214,11 @@ BLOG_URLS = {
     'medium-appdev': 'https://medium.com/feed/google-cloud/tagged/gcp-app-dev',
 }
 
-# HTML fallback URLs for services without XML feeds
+# HTML fallback URLs for services without XML feeds or where XML feeds are broken
 SERVICE_HTML_FALLBACKS = {
     'application-design-center': 'https://cloud.google.com/application-design-center/docs/release-notes',
+    'api-gateway': 'https://cloud.google.com/api-gateway/docs/release-notes',
+    'cloud-deploy': 'https://cloud.google.com/deploy/docs/release-notes',
     'cloud-sdk': 'https://cloud.google.com/sdk/docs/release-notes',
     'antigravity': 'https://antigravity.google/changelog',
 }
