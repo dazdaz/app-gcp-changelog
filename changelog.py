@@ -63,7 +63,7 @@ SERVICE_GROUPS = {
         'cloud-composer', 'healthcare-api', 'blockchain-node-engine'
     ],
     'workspace': [
-        'apps-script', 'cloud-search', 'docs-api'
+        'apps-script', 'cloud-search', 'docs-api', 'workspace-blog'
     ],
     'firebase': [
         'firebase', 'firebase-android', 'firebase-ios', 'firebase-js', 'firebase-admin',
@@ -191,6 +191,7 @@ SERVICE_FEEDS = {
     'apps-script': 'https://developers.google.com/feeds/apps-script-release-notes.xml',
     'cloud-search': 'https://developers.google.com/feeds/cloud-search-release-notes.xml',
     'docs-api': 'https://developers.google.com/feeds/docs-release-notes.xml',
+    'workspace-blog': 'http://feeds.feedburner.com/GoogleAppsUpdates',
     
     # Firebase
     'firebase': 'https://firebase.google.com/support/release-notes',
@@ -1071,7 +1072,12 @@ class ReleaseNotesScraper:
             response.raise_for_status()
             self.used_fallback = True
             
-            soup = self.BeautifulSoup(response.content, 'html.parser')
+            # Suppress XMLParsedAsHTMLWarning
+            import warnings
+            from bs4 import XMLParsedAsHTMLWarning
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+                soup = self.BeautifulSoup(response.content, 'html.parser')
             
             # Remove script and style elements
             for script in soup(["script", "style"]):
