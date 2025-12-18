@@ -16,9 +16,12 @@ import xml.etree.ElementTree as ET
 # GCP Service Groups (domains)
 SERVICE_GROUPS = {
     'apps': [
-        'application-design-center', 'apphub', 'api-gateway', 'apigee', 'cloud-build', 'cloud-deploy',
+        'application-design-center', 'apphub', 'api-gateway', 'cloud-build', 'cloud-deploy',
         'cloud-functions', 'cloud-run', 'cloud-sdk', 'cloud-tasks', 'cloud-trace', 'deployment-manager',
         'endpoints', 'eventarc', 'source-repositories', 'workflows'
+    ],
+    'apigee': [
+        'apigee'
     ],
     'databases': [
         'alloydb', 'bigquery', 'data-fusion', 'firestore', 'spanner', 'cloud-sql',
