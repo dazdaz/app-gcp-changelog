@@ -412,6 +412,21 @@ class ReleaseNotesScraper:
         """Check if the URL is AntiGravity changelog."""
         return 'antigravity.google' in url
     
+    def _is_blog_feed(self) -> bool:
+        """Check if the current URL is a blog-style feed where we should only use titles.
+        
+        Blog feeds contain full article content in their RSS, but we only want
+        to show the title and link, not the entire article text.
+        """
+        url = self.url
+        # Medium RSS feeds
+        if 'medium.com/feed/' in url:
+            return True
+        # Feedburner feeds (like workspace-blog)
+        if 'feeds.feedburner.com' in url or 'feedburner.google.com' in url:
+            return True
+        return False
+    
     def _parse_date(self, date_str: str) -> Optional[datetime]:
         """Parse date from various formats."""
         date_str = date_str.strip()
@@ -1286,8 +1301,21 @@ class ReleaseNotesScraper:
                     link = origlink_elem.text
             
             if parsed_date:
-                # Parse HTML content to extract items
-                items = self._parse_xml_content(content_text, title, link)
+                # Check if this is a blog feed - if so, just use title
+                if self._is_blog_feed():
+                    # For blog feeds, only use the title - don't include full article content
+                    clean_title = self._strip_html_tags(title) if title else ''
+                    if clean_title:
+                        items = [{
+                            'text': clean_title,
+                            'category': self._categorize_item(text=clean_title),
+                            'urls': [link.strip()] if link else []
+                        }]
+                    else:
+                        items = []
+                else:
+                    # For release notes, parse the full content
+                    items = self._parse_xml_content(content_text, title, link)
                 
                 if items:
                     releases.append({
