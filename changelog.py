@@ -225,6 +225,29 @@ SERVICE_HTML_FALLBACKS = {
     'cloud-deploy': 'https://cloud.google.com/deploy/docs/release-notes',
     'cloud-sdk': 'https://cloud.google.com/sdk/docs/release-notes',
     'antigravity': 'https://antigravity.google/changelog',
+    # AI & Machine Learning fallbacks
+    'ai-app-builder': 'https://cloud.google.com/generative-ai-app-builder/docs/release-notes',
+    'dialogflow': 'https://cloud.google.com/dialogflow/docs/release-notes',
+    'document-ai': 'https://cloud.google.com/document-ai/docs/release-notes',
+    'gemini-code-assist': 'https://cloud.google.com/gemini/docs/codeassist/release-notes',
+    'speech-to-text': 'https://cloud.google.com/speech-to-text/docs/release-notes',
+    'talent-solution': 'https://cloud.google.com/talent-solution/docs/release-notes',
+    'text-to-speech': 'https://cloud.google.com/text-to-speech/docs/release-notes',
+    'translation': 'https://cloud.google.com/translate/docs/release-notes',
+    'vertex-ai': 'https://cloud.google.com/vertex-ai/docs/release-notes',
+    'video-intelligence': 'https://cloud.google.com/video-intelligence/docs/release-notes',
+    # Compute / Infrastructure fallbacks
+    'bare-metal': 'https://cloud.google.com/bare-metal/docs/release-notes',
+    'cloud-hub': 'https://cloud.google.com/distributed-cloud/edge/latest/docs/release-notes',
+    'anthos-bare-metal': 'https://cloud.google.com/anthos/clusters/docs/bare-metal/latest/release-notes',
+    'anthos-vmware': 'https://cloud.google.com/anthos/clusters/docs/on-prem/latest/release-notes',
+    # Networking fallbacks
+    'cloud-nat': 'https://cloud.google.com/nat/docs/release-notes',
+    'network-tiers': 'https://cloud.google.com/network-tiers/docs/release-notes',
+    # Database fallbacks
+    'database-migration': 'https://cloud.google.com/database-migration/docs/release-notes',
+    'memorystore-memcached': 'https://cloud.google.com/memorystore/docs/memcached/release-notes',
+    'memorystore-redis': 'https://cloud.google.com/memorystore/docs/redis/release-notes',
 }
 
 def check_dependencies():
@@ -336,13 +359,18 @@ class ReleaseNotesScraper:
         if start_date:
             self.cutoff_date = start_date
         elif days:
-            self.cutoff_date = datetime.now() - timedelta(days=days)
+            # Use start of day N days ago (midnight) for more intuitive behavior
+            # e.g., "-d 2" includes all of today, yesterday, and the day before
+            cutoff = datetime.now() - timedelta(days=days)
+            self.cutoff_date = cutoff.replace(hour=0, minute=0, second=0, microsecond=0)
         elif months:
-            self.cutoff_date = datetime.now() - timedelta(days=months * 30)
+            cutoff = datetime.now() - timedelta(days=months * 30)
+            self.cutoff_date = cutoff.replace(hour=0, minute=0, second=0, microsecond=0)
         else:
             # Default to 12 months
             self.months = 12
-            self.cutoff_date = datetime.now() - timedelta(days=12 * 30)
+            cutoff = datetime.now() - timedelta(days=12 * 30)
+            self.cutoff_date = cutoff.replace(hour=0, minute=0, second=0, microsecond=0)
         
         self.releases = []
         self.platform = self._detect_platform(url)
@@ -374,6 +402,9 @@ class ReleaseNotesScraper:
             return False
         # Medium RSS feeds use /feed/ path
         if 'medium.com/feed/' in url:
+            return True
+        # Feedburner feeds are XML/Atom
+        if 'feeds.feedburner.com' in url or 'feedburner.google.com' in url:
             return True
         return url.endswith('.xml') or url.endswith('.atom') or '/feeds/' in url
     
@@ -1111,6 +1142,12 @@ class ReleaseNotesScraper:
             if not self.releases:
                 self._parse_unstructured_releases(content_area, selectors)
             
+            # Add fallback URL to items that have no URLs
+            for release in self.releases:
+                for item in release.get('items', []):
+                    if not item.get('urls') or len(item['urls']) == 0:
+                        item['urls'] = [url]  # Use the page URL as fallback
+            
             # Filter by date
             filtered_releases = self._filter_by_date(self.releases)
             
@@ -1167,7 +1204,7 @@ class ReleaseNotesScraper:
         releases = []
         
         # Handle Atom feeds (most Google Cloud feeds)
-        # Namespace handling for Atom
+        # Namespace handling for Atom and RSS content module
         namespaces = {
             'atom': 'http://www.w3.org/2005/Atom',
             'content': 'http://purl.org/rss/1.0/modules/content/'
@@ -1210,20 +1247,29 @@ class ReleaseNotesScraper:
                 date_str = date_elem.text
                 parsed_date = self._parse_xml_date(date_str)
             
-            # Get content
-            content_elem = entry.find('atom:content', namespaces)
-            if content_elem is None:
-                content_elem = entry.find('content')
-            if content_elem is None:
-                content_elem = entry.find('atom:summary', namespaces)
-            if content_elem is None:
-                content_elem = entry.find('summary')
-            if content_elem is None:
-                content_elem = entry.find('description')  # RSS format
-            
+            # Get content - try multiple sources
+            # Priority: content:encoded (RSS) > content (Atom) > summary > description
             content_text = ''
-            if content_elem is not None:
-                content_text = content_elem.text or ''
+            
+            # Try content:encoded first (common in RSS feeds like feedburner)
+            content_elem = entry.find('content:encoded', namespaces)
+            if content_elem is not None and content_elem.text:
+                content_text = content_elem.text
+            
+            # Try other content elements
+            if not content_text:
+                content_elem = entry.find('atom:content', namespaces)
+                if content_elem is None:
+                    content_elem = entry.find('content')
+                if content_elem is None:
+                    content_elem = entry.find('atom:summary', namespaces)
+                if content_elem is None:
+                    content_elem = entry.find('summary')
+                if content_elem is None:
+                    content_elem = entry.find('description')  # RSS format
+                
+                if content_elem is not None:
+                    content_text = content_elem.text or ''
             
             # Get link
             link = ''
@@ -1232,6 +1278,12 @@ class ReleaseNotesScraper:
                 link_elem = entry.find('link')
             if link_elem is not None:
                 link = link_elem.get('href', '') or link_elem.text or ''
+            
+            # Also try feedburner:origLink for feedburner feeds
+            if not link:
+                origlink_elem = entry.find('{http://rssnamespace.org/feedburner/ext/1.0}origLink')
+                if origlink_elem is not None and origlink_elem.text:
+                    link = origlink_elem.text
             
             if parsed_date:
                 # Parse HTML content to extract items
@@ -1303,79 +1355,153 @@ class ReleaseNotesScraper:
     
     def _parse_xml_content(self, content: str, title: str = '', entry_link: str = '') -> List[Dict]:
         """Parse HTML content from XML feed entry."""
+        import html as html_module
+        
         items = []
+        
+        # Clean up entry_link (strip whitespace)
+        entry_link = entry_link.strip() if entry_link else ''
         
         if not content:
             if title:
+                # Clean the title as well in case it contains HTML
+                clean_title = self._strip_html_tags(title)
                 items.append({
-                    'text': title,
-                    'category': self._categorize_item(text=title),
+                    'text': clean_title,
+                    'category': self._categorize_item(text=clean_title),
                     'urls': [entry_link] if entry_link else []
                 })
             return items
         
+        # Unescape HTML entities first (handles double-encoded content from RSS feeds)
+        content = html_module.unescape(content)
+        
         # Parse HTML content
         soup = self.BeautifulSoup(content, 'html.parser')
         
-        # Look for list items or paragraphs
-        list_items = soup.find_all('li')
-        if list_items:
-            for li in list_items:
-                text = li.get_text(strip=True)
-                html_content = str(li)
-                links = [a.get('href') for a in li.find_all('a') if a.get('href')]
+        # Extract all URLs from the content using BeautifulSoup
+        all_urls = []
+        for a in soup.find_all('a', href=True):
+            href = a.get('href', '').strip()
+            if href:
+                # Convert relative URLs to absolute
+                if href.startswith('/'):
+                    # Relative URL - prepend cloud.google.com
+                    href = 'https://cloud.google.com' + href
+                elif href.startswith('#'):
+                    # Anchor link - skip these as they're not useful without context
+                    continue
+                elif not href.startswith('http'):
+                    # Other relative URL (no leading slash) - skip
+                    continue
+                
+                # Skip image URLs (blogger images, etc.) - they're not useful as documentation links
+                if not any(img_host in href for img_host in ['blogger.googleusercontent.com', 'bp.blogspot.com', '/img/', '.png', '.jpg', '.gif', '.jpeg', '.webp']):
+                    all_urls.append(href)
+        
+        # Also extract URLs using regex as fallback (in case BeautifulSoup missed some)
+        url_pattern = re.compile(r'https?://[^\s"<>\]]+')
+        regex_urls = url_pattern.findall(content)
+        for url in regex_urls:
+            # Clean up the URL (remove trailing punctuation)
+            url = url.rstrip('.,;:!?)\'"]')
+            # Skip image URLs
+            if url and url not in all_urls:
+                if not any(img_host in url for img_host in ['blogger.googleusercontent.com', 'bp.blogspot.com', '/img/', '.png', '.jpg', '.gif', '.jpeg', '.webp']):
+                    all_urls.append(url)
+        
+        # For feedburner/blog style content, use the whole content as a single item
+        # This is better than splitting by <li> which fragments the content
+        # Check if this looks like blog/announcement content (has headers or long divs)
+        has_headers = bool(soup.find_all(['h1', 'h2', 'h3', 'h4']))
+        has_long_content = len(soup.get_text(strip=True)) > 200
+        
+        # For GCP release notes XML feeds, look for specific div classes first
+        release_divs = soup.find_all('div', class_=['release-feature', 'release-changed', 'release-announcement', 'release-breaking', 'release-issue'])
+        if release_divs:
+            for div in release_divs:
+                text = div.get_text(strip=True)
+                # Extra safeguard: strip any remaining HTML tags
+                text = self._strip_html_tags(text)
+                links = [a.get('href') for a in div.find_all('a') if a.get('href')]
+                # Normalize all URLs
+                links = self._normalize_urls(links)
                 if text and len(text) > 5:
                     items.append({
-                        'text': html_content,
-                        'category': self._categorize_item(element=li, text=text),
-                        'urls': links
+                        'text': text,
+                        'category': self._categorize_item(element=div, text=text),
+                        'urls': links if links else self._normalize_urls(all_urls[:3])
                     })
         
-        # Also check for specific div classes
-        release_divs = soup.find_all('div', class_=['release-feature', 'release-changed', 'release-announcement', 'release-breaking', 'release-issue'])
-        for div in release_divs:
-            text = div.get_text(strip=True)
-            html_content = str(div)
-            links = [a.get('href') for a in div.find_all('a') if a.get('href')]
-            if text and len(text) > 5:
+        # If no release divs, and content looks like blog/announcement, use whole content
+        if not items and (has_headers or has_long_content):
+            text = soup.get_text(separator=' ', strip=True)
+            # Extra safeguard: strip any remaining HTML tags (handles edge cases)
+            text = self._strip_html_tags(text)
+            text = re.sub(r'\s+', ' ', text)
+            if text and len(text) > 10:
                 items.append({
-                    'text': html_content,
-                    'category': self._categorize_item(element=div, text=text),
-                    'urls': links
+                    'text': text,
+                    'category': self._categorize_item(text=text),
+                    'urls': all_urls[:5] if all_urls else ([entry_link] if entry_link else [])
                 })
         
-        # If no list items or divs found, use paragraphs
+        # Otherwise try list items
+        if not items:
+            list_items = soup.find_all('li')
+            if list_items:
+                for li in list_items:
+                    text = li.get_text(strip=True)
+                    text = self._strip_html_tags(text)
+                    links = [a.get('href') for a in li.find_all('a') if a.get('href')]
+                    # Normalize all URLs
+                    links = self._normalize_urls(links)
+                    if text and len(text) > 5:
+                        items.append({
+                            'text': text,
+                            'category': self._categorize_item(element=li, text=text),
+                            'urls': links
+                        })
+        
+        # If no list items found, use paragraphs
         if not items:
             paragraphs = soup.find_all('p')
             for p in paragraphs:
                 text = p.get_text(strip=True)
-                html_content = str(p)
+                text = self._strip_html_tags(text)
                 links = [a.get('href') for a in p.find_all('a') if a.get('href')]
+                # Normalize all URLs
+                links = self._normalize_urls(links)
                 if text and len(text) > 10:
                     items.append({
-                        'text': html_content,
+                        'text': text,
                         'category': self._categorize_item(element=p, text=text),
                         'urls': links
                     })
         
-        # If still no items, use the whole content
+        # Final fallback: use the whole content as plain text
         if not items:
-            text = soup.get_text(strip=True)
+            text = soup.get_text(separator=' ', strip=True)
+            text = self._strip_html_tags(text)
+            text = re.sub(r'\s+', ' ', text)
             if text and len(text) > 10:
-                urls = [a.get('href') for a in soup.find_all('a') if a.get('href')]
-                # Add entry link if no URLs were found in content
-                if not urls and entry_link:
-                    urls = [entry_link]
                 items.append({
-                    'text': content,
+                    'text': text,
                     'category': self._categorize_item(text=text),
-                    'urls': urls
+                    'urls': all_urls[:5] if all_urls else ([entry_link] if entry_link else [])
                 })
         
-        # Ensure items have the entry link if they don't have any URLs
+        # Ensure all items have URLs - use all_urls or entry_link as fallback
+        # Also normalize any remaining relative URLs
         for item in items:
-            if not item.get('urls') and entry_link:
-                item['urls'] = [entry_link]
+            if not item.get('urls') or len(item['urls']) == 0:
+                if all_urls:
+                    item['urls'] = self._normalize_urls(all_urls[:5])  # Limit to 5 URLs
+                elif entry_link:
+                    item['urls'] = [entry_link]
+            else:
+                # Normalize existing URLs
+                item['urls'] = self._normalize_urls(item['urls'])
         
         return items
     
@@ -1522,7 +1648,7 @@ class ReleaseNotesScraper:
                     items = [{
                         'text': f"<strong>{version}</strong>: {description}",
                         'category': self._categorize_item(text=description),
-                        'urls': []
+                        'urls': ['https://antigravity.google/changelog']
                     }]
                     
                     releases.append({
@@ -1548,7 +1674,7 @@ class ReleaseNotesScraper:
                             items.append({
                                 'text': f"<strong>{version}</strong>: {changes_text}",
                                 'category': self._categorize_item(text=description + " " + changes_text),
-                                'urls': []
+                                'urls': ['https://antigravity.google/changelog']
                             })
                     
                     # Parse accordion items (Improvements, Fixes, Patches)
@@ -1569,7 +1695,7 @@ class ReleaseNotesScraper:
                                 items.append({
                                     'text': f"[{item_title}] {item_text}",
                                     'category': category,
-                                    'urls': []
+                                    'urls': ['https://antigravity.google/changelog']
                                 })
                     
                     if items:
@@ -1613,7 +1739,7 @@ class ReleaseNotesScraper:
                 items = [{
                     'text': f"<strong>v{version}</strong> - {description}: {changes_text}".strip(),
                     'category': self._categorize_item(text=description + " " + changes_text),
-                    'urls': []
+                    'urls': ['https://antigravity.google/changelog']
                 }]
                 
                 # Find improvements, fixes, patches
@@ -1632,7 +1758,7 @@ class ReleaseNotesScraper:
                                 items.append({
                                     'text': f"[{section_name}] {item_text}",
                                     'category': category,
-                                    'urls': []
+                                    'urls': ['https://antigravity.google/changelog']
                                 })
                 
                 releases.append({
@@ -1780,6 +1906,7 @@ class ReleaseNotesScraper:
                                 content_text = ' '.join(c.get_text(strip=True) for c in cells[1:])
                                 if content_text and len(content_text) > 10:
                                     links = [a.get('href') for a in row.find_all('a') if a.get('href')]
+                                    links = self._normalize_urls(links)
                                     self.releases.append({
                                         'date': date_found,
                                         'date_str': date_str,
@@ -1823,6 +1950,7 @@ class ReleaseNotesScraper:
                                     text_content = str(sibling) # Get full HTML
                                     text = sibling.get_text(strip=True)
                                     links = [a.get('href') for a in sibling.find_all('a') if a.get('href')]
+                                    links = self._normalize_urls(links)
                                     if text and len(text) > 10:
                                         items.append({
                                             'text': text_content,
@@ -1836,6 +1964,7 @@ class ReleaseNotesScraper:
                                             text_content = str(li)
                                             li_text = li.get_text(strip=True)
                                             li_links = [a.get('href') for a in li.find_all('a') if a.get('href')]
+                                            li_links = self._normalize_urls(li_links)
                                             if li_text:
                                                 items.append({
                                                     'text': text_content,
@@ -1846,6 +1975,7 @@ class ReleaseNotesScraper:
                                         text_content = str(sibling)
                                         text = sibling.get_text(strip=True)
                                         links = [a.get('href') for a in sibling.find_all('a') if a.get('href')]
+                                        links = self._normalize_urls(links)
                                         if text and len(text) > 10:
                                             items.append({
                                                 'text': text_content,
@@ -1890,6 +2020,7 @@ class ReleaseNotesScraper:
                 text_content = str(div)
                 text = div.get_text(strip=True)
                 links = [a.get('href') for a in div.find_all('a') if a.get('href')]
+                links = self._normalize_urls(links)
                 if text and len(text) > 20:
                     # Check if we already have this content
                     is_duplicate = False
@@ -1929,6 +2060,7 @@ class ReleaseNotesScraper:
                             text_content = str(parent)
                             content = parent.get_text(strip=True)
                             links = [a.get('href') for a in parent.find_all('a') if a.get('href')]
+                            links = self._normalize_urls(links)
                             if content and len(content) > 20:
                                 is_duplicate = False
                                 for release in self.releases:
@@ -1949,6 +2081,55 @@ class ReleaseNotesScraper:
                                         'url': self.url
                                     })
     
+    def _strip_html_tags(self, text: str) -> str:
+        """Strip HTML tags from text using regex as a fallback."""
+        import html as html_module
+        
+        if not text:
+            return text
+        
+        # Unescape HTML entities
+        text = html_module.unescape(text)
+        
+        # Strip HTML tags using regex
+        # Handle style attributes with quotes
+        text = re.sub(r'<[^>]+>', ' ', text)
+        
+        # Clean up extra whitespace
+        text = re.sub(r'\s+', ' ', text)
+        
+        return text.strip()
+    
+    def _normalize_urls(self, urls: list, base_host: str = 'https://cloud.google.com') -> list:
+        """Convert relative URLs to absolute and filter out invalid ones."""
+        normalized = []
+        for url in urls:
+            if not url:
+                continue
+            url = url.strip()
+            
+            # Skip anchor-only links
+            if url.startswith('#'):
+                continue
+            
+            # Convert relative URLs to absolute
+            if url.startswith('/'):
+                url = base_host + url
+            elif not url.startswith('http'):
+                # Skip other relative URLs without protocol
+                continue
+            
+            # Skip image URLs
+            if any(img_ext in url.lower() for img_ext in ['.png', '.jpg', '.gif', '.jpeg', '.webp', '.svg', '.ico']):
+                continue
+            if any(img_host in url for img_host in ['blogger.googleusercontent.com', 'bp.blogspot.com']):
+                continue
+            
+            if url not in normalized:
+                normalized.append(url)
+        
+        return normalized
+    
     def format_output(self, releases: List[Dict], format_type: str) -> str:
         """Format the scraped releases based on the specified format."""
         if format_type == 'json':
@@ -1962,18 +2143,25 @@ class ReleaseNotesScraper:
     
     def _clean_text(self, html_text: str) -> str:
         """Clean HTML text and add proper spacing."""
-        # Parse HTML and get text
-        soup = self.BeautifulSoup(html_text, 'html.parser')
+        import html as html_module
         
-        # Replace <a> tags with their text + URL in parentheses
-        for a in soup.find_all('a'):
-            href = a.get('href', '')
-            link_text = a.get_text(strip=True)
-            if href and link_text:
-                a.replace_with(f"{link_text}")
+        # First unescape any HTML entities (handles double-encoded content)
+        unescaped = html_module.unescape(html_text)
+        
+        # Parse HTML and get text
+        soup = self.BeautifulSoup(unescaped, 'html.parser')
+        
+        # Remove script and style elements
+        for element in soup(['script', 'style']):
+            element.decompose()
         
         # Get text with separator to preserve word boundaries
         text = soup.get_text(separator=' ', strip=True)
+        
+        # Fallback: If text still contains HTML-like tags, strip them with regex
+        # This handles cases where BeautifulSoup doesn't recognize malformed HTML
+        if '<' in text and '>' in text:
+            text = re.sub(r'<[^>]+>', ' ', text)
         
         # Clean up extra whitespace
         text = re.sub(r'\s+', ' ', text)
@@ -2032,7 +2220,8 @@ class ReleaseNotesScraper:
                 current_date = date_str
                 output.append("")
                 output.append("┌" + "─" * 78 + "┐")
-                output.append("│" + f"  📅 {date_str}".ljust(78) + "│")
+                # Use ljust(77) to account for emoji 📅 being 2 columns wide but 1 character
+                output.append("│" + f"  📅 {date_str}".ljust(77) + "│")
                 output.append("└" + "─" * 78 + "┘")
             
             # Print service subheader for group queries
@@ -2119,7 +2308,8 @@ class ReleaseNotesScraper:
         # Statistics section
         output.append("")
         output.append("┌" + "─" * 78 + "┐")
-        output.append("│" + "  📊 STATISTICS".ljust(78) + "│")
+        # Use ljust(77) to account for emoji 📊 being 2 columns wide but 1 character
+        output.append("│" + "  📊 STATISTICS".ljust(77) + "│")
         output.append("├" + "─" * 78 + "┤")
         
         total_items = sum(len(r['items']) for r in releases)
