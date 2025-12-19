@@ -248,6 +248,9 @@ SERVICE_HTML_FALLBACKS = {
     'database-migration': 'https://cloud.google.com/database-migration/docs/release-notes',
     'memorystore-memcached': 'https://cloud.google.com/memorystore/docs/memcached/release-notes',
     'memorystore-redis': 'https://cloud.google.com/memorystore/docs/redis/release-notes',
+    # Specialized & Other Services fallbacks
+    'healthcare-api': 'https://cloud.google.com/healthcare-api/docs/release-notes',
+    'blockchain-node-engine': 'https://cloud.google.com/blockchain-node-engine/docs/release-notes',
 }
 
 def check_dependencies():
@@ -2778,9 +2781,8 @@ Output formats:
     )
     source_group.add_argument(
         '-g', '--group',
-        choices=list(SERVICE_GROUPS.keys()),
-        metavar='GROUP',
-        help='Service group to query (use --list-groups to see all options)'
+        metavar='GROUP[,GROUP,...]',
+        help='Service group(s) to query, comma-separated (e.g., apps,security). Use --list-groups to see all options'
     )
     source_group.add_argument(
         '-u', '--url',
@@ -2870,7 +2872,23 @@ Output formats:
         urls = [SERVICE_FEEDS[args.service]]
         service_names = [args.service]
     elif args.group:
-        services = SERVICE_GROUPS[args.group]
+        # Parse comma-separated groups
+        group_names = [g.strip() for g in args.group.split(',')]
+        
+        # Validate all group names
+        invalid_groups = [g for g in group_names if g not in SERVICE_GROUPS]
+        if invalid_groups:
+            parser.error(f"Invalid group(s): {', '.join(invalid_groups)}. Use --list-groups to see available groups.")
+        
+        # Combine services from all specified groups (avoid duplicates while preserving order)
+        services = []
+        seen = set()
+        for group in group_names:
+            for service in SERVICE_GROUPS[group]:
+                if service not in seen:
+                    services.append(service)
+                    seen.add(service)
+        
         urls = [SERVICE_FEEDS[s] for s in services]
         service_names = services
     elif args.url:
@@ -2917,9 +2935,15 @@ Output formats:
     if not start_date and not months and not days:
         months = 12
     
+    # Parse group names for display
+    group_display = None
+    if args.group:
+        group_names = [g.strip() for g in args.group.split(',')]
+        group_display = ', '.join(group_names) if len(group_names) > 1 else group_names[0]
+    
     if args.verbose:
         if len(urls) > 1:
-            print(f"Scraping {len(urls)} services in group '{args.group if args.group else 'blogs'}':", file=sys.stderr)
+            print(f"Scraping {len(urls)} services in group '{group_display if group_display else 'blogs'}':", file=sys.stderr)
             for name in service_names:
                 print(f"  - {name}", file=sys.stderr)
         else:
@@ -2969,7 +2993,7 @@ Output formats:
     
     # Add group info for formatting
     if args.group:
-        format_scraper.group_name = args.group
+        format_scraper.group_name = group_display
         format_scraper.service_names = service_names
     elif args.blogs:
         format_scraper.group_name = 'Google Blogs'
